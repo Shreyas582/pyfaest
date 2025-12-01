@@ -60,7 +60,7 @@ jobs:
 
     - name: Build distribution
       run: |
-        python -m build
+        python -m build --sdist
 
     - name: Check distribution
       run: |
