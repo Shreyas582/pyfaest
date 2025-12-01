@@ -8,6 +8,9 @@ from cffi import FFI
 import os
 import sys
 import subprocess
+import urllib.request
+import tarfile
+import zipfile
 
 ffibuilder = FFI()
 
@@ -218,10 +221,69 @@ else:
     build_dir = os.environ.get('FAEST_BUILD_DIR', os.path.join(script_dir, '..', 'build'))
     src_dir = os.environ.get('FAEST_SRC_DIR', os.path.join(script_dir, '..'))
     
-    # If build directory doesn't exist, try to clone and build faest-ref
+    # If build directory doesn't exist, try to download pre-built binaries or build from source
     if not os.path.exists(build_dir):
         print(f"FAEST build directory not found: {build_dir}")
-        print("Attempting to clone and build faest-ref from GitHub...")
+        
+        # Try to download pre-built release from GitHub
+        faest_version = "v2.0.4"  # Update this to match the version you want
+        faest_ref_dir = os.path.join(script_dir, '..', 'faest-ref')
+        
+        # Determine the release asset name based on platform
+        if system == 'linux':
+            asset_name = f"faest-{faest_version}-linux-x86_64.tar.gz"
+        elif system == 'darwin':
+            asset_name = f"faest-{faest_version}-macos-x86_64.tar.gz"
+        elif system == 'windows':
+            asset_name = f"faest-{faest_version}-windows-x64.zip"
+        else:
+            asset_name = None
+        
+        downloaded = False
+        if asset_name:
+            release_url = f"https://github.com/faest-sign/faest-ref/releases/download/{faest_version}/{asset_name}"
+            print(f"Attempting to download pre-built binaries from GitHub releases...")
+            print(f"  URL: {release_url}")
+            
+            try:
+                os.makedirs(faest_ref_dir, exist_ok=True)
+                download_path = os.path.join(faest_ref_dir, asset_name)
+                
+                # Download the release asset
+                urllib.request.urlretrieve(release_url, download_path)
+                print(f"✓ Downloaded {asset_name}")
+                
+                # Extract the archive
+                if asset_name.endswith('.tar.gz'):
+                    with tarfile.open(download_path, 'r:gz') as tar:
+                        tar.extractall(faest_ref_dir)
+                elif asset_name.endswith('.zip'):
+                    with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                        zip_ref.extractall(faest_ref_dir)
+                
+                print(f"✓ Extracted pre-built binaries")
+                
+                # Set build_dir and src_dir to the extracted location
+                build_dir = os.path.join(faest_ref_dir, 'lib')
+                src_dir = os.path.join(faest_ref_dir, 'include')
+                downloaded = True
+                
+            except Exception as e:
+                print(f"Warning: Could not download pre-built binaries: {e}")
+                print(f"Will attempt to build from source instead...")
+        
+        # If download failed or not available, build from source
+        if not downloaded:
+            if system == 'windows':
+                print(f"ERROR: FAEST library not found for Windows", file=sys.stderr)
+                print("", file=sys.stderr)
+                print("Pre-built binaries could not be downloaded and Windows source builds are not supported.", file=sys.stderr)
+                print("Please either:", file=sys.stderr)
+                print("  1. Use WSL/Linux to install the package", file=sys.stderr)
+                print("  2. Manually download and extract FAEST binaries", file=sys.stderr)
+                sys.exit(1)
+            
+            print("Attempting to clone and build faest-ref from GitHub...")
         
         # Determine where to clone faest-ref
         faest_ref_dir = os.path.join(script_dir, '..', 'faest-ref')
@@ -263,18 +325,28 @@ else:
                 except (subprocess.CalledProcessError, FileNotFoundError):
                     print(f"{tool_name} not found, installing...")
                     try:
-                        subprocess.run(
-                            [sys.executable, '-m', 'pip', 'install', tool_name],
-                            check=True,
-                            capture_output=True,
-                            text=True
-                        )
+                        # Try using pip module directly (works in isolated builds)
+                        import pip
+                        pip.main(['install', tool_name])
                         print(f"✓ Installed {tool_name}")
                         return True
-                    except subprocess.CalledProcessError as e:
-                        print(f"ERROR: Failed to install {tool_name}", file=sys.stderr)
-                        print(f"  {e.stderr}", file=sys.stderr)
-                        return False
+                    except (ImportError, AttributeError):
+                        # Fallback to subprocess call
+                        try:
+                            subprocess.run(
+                                [sys.executable, '-m', 'pip', 'install', tool_name],
+                                check=True,
+                                capture_output=True,
+                                text=True
+                            )
+                            print(f"✓ Installed {tool_name}")
+                            return True
+                        except subprocess.CalledProcessError as e:
+                            print(f"ERROR: Failed to install {tool_name}", file=sys.stderr)
+                            print(f"  {e.stderr}", file=sys.stderr)
+                            print(f"\nPlease install {tool_name} manually:", file=sys.stderr)
+                            print(f"  pip install {tool_name}", file=sys.stderr)
+                            return False
             
             if not ensure_build_tool('meson'):
                 sys.exit(1)

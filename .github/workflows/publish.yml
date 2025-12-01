@@ -12,8 +12,96 @@ on:
         default: true
 
 jobs:
+  build-libraries:
+    name: Build FAEST libraries for all platforms
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install build dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build
+    
+    - name: Install build dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install meson ninja
+    
+    - name: Install build dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pip install meson ninja
+    
+    - name: Clone faest-ref
+      run: |
+        git clone --depth=1 https://github.com/faest-sign/faest-ref.git
+    
+    - name: Build FAEST library
+      run: |
+        cd faest-ref
+        meson setup build
+        meson compile -C build
+    
+    - name: Prepare libraries (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
+        cp faest-ref/build/libfaest.so* lib/${{ matrix.platform }}/${{ matrix.arch }}/
+        ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
+    
+    - name: Prepare libraries (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
+        cp faest-ref/build/libfaest*.dylib lib/${{ matrix.platform }}/${{ matrix.arch }}/ || true
+        ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
+    
+    - name: Prepare libraries (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path lib/${{ matrix.platform }}/${{ matrix.arch }}
+        Copy-Item faest-ref/build/*.dll lib/${{ matrix.platform }}/${{ matrix.arch }}/ -ErrorAction SilentlyContinue
+        Get-ChildItem lib/${{ matrix.platform }}/${{ matrix.arch }}/
+    
+    - name: Prepare headers
+      run: |
+        mkdir -p include
+        cp faest-ref/*.h include/ || true
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: faest-${{ matrix.platform }}-${{ matrix.arch }}
+        path: |
+          lib/
+          include/
+
   build-and-publish:
     name: Build and Publish to PyPI
+    needs: build-libraries
     runs-on: ubuntu-latest
     environment: release
 
@@ -33,30 +121,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install build twine
 
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y meson ninja-build
+    - name: Download all library artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
 
-    - name: Build FAEST C library
+    - name: Combine libraries from all platforms
       run: |
-        cd ${{ github.workspace }}/..
-        git clone https://github.com/faest-sign/faest-ref.git
-        cd faest-ref
-        meson setup build
-        meson compile -C build
-
-    - name: Prepare bundled libraries
-      env:
-        FAEST_REF: ${{ github.workspace }}/../faest-ref
-      run: |
-        cd ${{ github.workspace }}
-        bash scripts/prepare_release.sh
-
-    - name: Verify bundled files
-      run: |
-        ls -lh lib/linux/x86_64/
+        mkdir -p lib include
+        
+        # Copy all platform libraries
+        find artifacts -name "lib" -type d -exec cp -r {}/* lib/ \; 2>/dev/null || true
+        
+        # Copy headers (should be same from any platform)
+        find artifacts -name "include" -type d -exec cp -r {}/* include/ \; 2>/dev/null || true
+        
+        # Show what we have
+        echo "Libraries:"
+        find lib -type f
+        echo "Headers:"
         ls include/*.h | wc -l
+
+    - name: Add __init__.py files to make packages
+      run: |
+        echo "# Library package" > lib/__init__.py
+        find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
+        echo "# Include package" > include/__init__.py
 
     - name: Clean dist directory
       run: |

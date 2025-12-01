@@ -16,7 +16,7 @@ else:
 
 setup(
     name='pyfaest',
-    version='1.0.5',
+    version='1.0.6',
     author='PyFAEST Contributors',
     author_email='',
     maintainer='Shreyas Sankpal',
@@ -30,9 +30,17 @@ setup(
         'Documentation': 'https://github.com/Shreyas582/pyfaest/tree/main/README.md',
         'Source Code': 'https://github.com/Shreyas582/pyfaest/tree/main/',
     },
-    packages=find_packages(exclude=['scripts', 'scripts.*', 'tests', 'tests.*']) + ['lib', 'lib.linux', 'lib.linux.x86_64', 'include'],
+    packages=find_packages(exclude=['scripts', 'scripts.*', 'tests', 'tests.*']) + [
+        'lib', 'lib.linux', 'lib.linux.x86_64',
+        'lib.macos', 'lib.macos.arm64', 'lib.macos.x86_64',
+        'lib.windows', 'lib.windows.x64',
+        'include'
+    ],
     package_data={
         'lib.linux.x86_64': ['*.so*'],
+        'lib.macos.arm64': ['*.dylib'],
+        'lib.macos.x86_64': ['*.dylib'],
+        'lib.windows.x64': ['*.dll'],
         'include': ['*.h'],
     },
     include_package_data=True,
