@@ -1,0 +1,45 @@
+# Byte distribution tests
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+*.dylib
+*.dll
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+_faest_cffi.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Development
+*.key
+*.sig
+test_*.key
+
+# Note: lib/ directory structure
+# Only commit the actual .so files (libfaest.so.1.0.0)
+# Symlinks (libfaest.so, libfaest.so.1) are not committed
+# They are created at runtime by scripts/update_libraries.sh
