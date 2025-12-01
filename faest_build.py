@@ -197,7 +197,18 @@ else:
 bundled_lib_dir = os.path.join(script_dir, 'lib', platform_dir) if platform_dir else None
 bundled_include_dir = os.path.join(script_dir, 'include')
 
+# Check if bundled libraries exist and have actual library files
+has_bundled_libs = False
 if bundled_lib_dir and os.path.exists(bundled_lib_dir) and os.path.exists(bundled_include_dir):
+    # Verify at least one library file exists
+    lib_files = []
+    if os.path.exists(bundled_lib_dir):
+        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest')]
+    
+    if lib_files:
+        has_bundled_libs = True
+
+if has_bundled_libs:
     # Use bundled libraries (installed from PyPI or after running prepare_release.sh)
     build_dir = bundled_lib_dir
     src_dir = bundled_include_dir
