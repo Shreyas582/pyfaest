@@ -16,7 +16,7 @@ else:
 
 setup(
     name='pyfaest',
-    version='1.0.0',
+    version='1.0.1',
     author='PyFAEST Contributors',
     author_email='',
     maintainer='Shreyas Sankpal',
