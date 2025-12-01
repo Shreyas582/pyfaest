@@ -58,6 +58,10 @@ jobs:
         ls -lh lib/linux/x86_64/
         ls include/*.h | wc -l
 
+    - name: Clean dist directory
+      run: |
+        rm -rf dist/ build/ *.egg-info
+
     - name: Build distribution
       run: |
         python -m build --sdist
@@ -66,6 +70,7 @@ jobs:
       run: |
         twine check dist/*
         tar -tzf dist/*.tar.gz | grep -E '(lib/|include/)' | head -10
+        ls -lh dist/
 
     - name: Publish to Test PyPI
       if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi == 'true'
