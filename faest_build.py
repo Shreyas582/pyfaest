@@ -7,6 +7,7 @@ Run this during the installation process
 from cffi import FFI
 import os
 import sys
+import subprocess
 
 ffibuilder = FFI()
 
@@ -197,18 +198,15 @@ else:
 bundled_lib_dir = os.path.join(script_dir, 'lib', platform_dir) if platform_dir else None
 bundled_include_dir = os.path.join(script_dir, 'include')
 
-# Check if bundled libraries exist and have actual library files
-has_bundled_libs = False
-if bundled_lib_dir and os.path.exists(bundled_lib_dir) and os.path.exists(bundled_include_dir):
-    # Verify at least one library file exists
-    lib_files = []
+# Check if bundled libraries exist by looking for the actual library file
+has_bundled_lib = False
+if bundled_lib_dir and os.path.exists(bundled_include_dir):
+    # Look for library files in the bundled directory
     if os.path.exists(bundled_lib_dir):
-        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest')]
-    
-    if lib_files:
-        has_bundled_libs = True
+        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest') and (f.endswith('.so') or f.endswith('.dylib') or f.endswith('.dll') or f.endswith('.a'))]
+        has_bundled_lib = len(lib_files) > 0
 
-if has_bundled_libs:
+if has_bundled_lib:
     # Use bundled libraries (installed from PyPI or after running prepare_release.sh)
     build_dir = bundled_lib_dir
     src_dir = bundled_include_dir
@@ -219,6 +217,98 @@ else:
     # Development mode: check environment variables or relative paths
     build_dir = os.environ.get('FAEST_BUILD_DIR', os.path.join(script_dir, '..', 'build'))
     src_dir = os.environ.get('FAEST_SRC_DIR', os.path.join(script_dir, '..'))
+    
+    # If build directory doesn't exist, try to clone and build faest-ref
+    if not os.path.exists(build_dir):
+        print(f"FAEST build directory not found: {build_dir}")
+        print("Attempting to clone and build faest-ref from GitHub...")
+        
+        # Determine where to clone faest-ref
+        faest_ref_dir = os.path.join(script_dir, '..', 'faest-ref')
+        
+        if not os.path.exists(faest_ref_dir):
+            print(f"Cloning faest-ref repository...")
+            try:
+                subprocess.run(
+                    ['git', 'clone', '--depth=1', 'https://github.com/faest-sign/faest-ref.git', faest_ref_dir],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                print(f"✓ Successfully cloned faest-ref to {faest_ref_dir}")
+            except subprocess.CalledProcessError as e:
+                print(f"ERROR: Failed to clone faest-ref repository", file=sys.stderr)
+                print(f"  {e.stderr}", file=sys.stderr)
+                sys.exit(1)
+            except FileNotFoundError:
+                print(f"ERROR: git command not found. Please install git.", file=sys.stderr)
+                sys.exit(1)
+        
+        # Build faest-ref
+        build_dir = os.path.join(faest_ref_dir, 'build')
+        if not os.path.exists(build_dir):
+            print(f"Building FAEST library with meson...")
+            
+            # Check if meson and ninja are installed, install if missing
+            def ensure_build_tool(tool_name):
+                """Check if a build tool is available, install via pip if not."""
+                try:
+                    subprocess.run(
+                        [tool_name, '--version'],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    return True
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    print(f"{tool_name} not found, installing...")
+                    try:
+                        subprocess.run(
+                            [sys.executable, '-m', 'pip', 'install', tool_name],
+                            check=True,
+                            capture_output=True,
+                            text=True
+                        )
+                        print(f"✓ Installed {tool_name}")
+                        return True
+                    except subprocess.CalledProcessError as e:
+                        print(f"ERROR: Failed to install {tool_name}", file=sys.stderr)
+                        print(f"  {e.stderr}", file=sys.stderr)
+                        return False
+            
+            if not ensure_build_tool('meson'):
+                sys.exit(1)
+            if not ensure_build_tool('ninja'):
+                sys.exit(1)
+            
+            try:
+                # Run meson setup
+                subprocess.run(
+                    ['meson', 'setup', 'build'],
+                    cwd=faest_ref_dir,
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                
+                # Run ninja
+                subprocess.run(
+                    ['ninja', '-C', 'build'],
+                    cwd=faest_ref_dir,
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                
+                print(f"✓ Successfully built FAEST library in {build_dir}")
+            except subprocess.CalledProcessError as e:
+                print(f"ERROR: Failed to build FAEST library", file=sys.stderr)
+                print(f"  stdout: {e.stdout}", file=sys.stderr)
+                print(f"  stderr: {e.stderr}", file=sys.stderr)
+                sys.exit(1)
+        
+        # Update src_dir to point to faest-ref
+        src_dir = faest_ref_dir
     
     # Validate paths
     if not os.path.exists(build_dir):

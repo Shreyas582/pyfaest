@@ -7,14 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.1] - 2025-12-01
-
-### Fixed
-- Improved bundled library detection in faest_build.py to verify actual library files exist
-- Fixed PyPI installation failure where bundled libraries were not properly detected
-- Package now installs correctly from PyPI without external dependencies
-
-## [1.0.0] - 2025-12-01
+## [1.0.0] - TBD
 
 ### Added
 - Initial release of PyFAEST
