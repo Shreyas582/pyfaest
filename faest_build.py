@@ -332,6 +332,20 @@ else:
     print(f"  Source directory: {src_dir}")
 
 # Configure the source module
+# For runtime library search, we need to handle both bundled (PyPI) and development cases
+if has_bundled_lib:
+    # For PyPI installs, the libraries will be installed in site-packages/lib/<platform>/
+    # The _faest_cffi module will be in site-packages/, so we use $ORIGIN/lib/<platform>
+    if system == 'linux':
+        runtime_lib_dirs = ['$ORIGIN/lib/' + platform_dir]
+    elif system == 'darwin':
+        runtime_lib_dirs = ['@loader_path/lib/' + platform_dir]
+    else:
+        runtime_lib_dirs = None
+else:
+    # For development, use absolute path
+    runtime_lib_dirs = [build_dir] if system in ['linux', 'darwin'] else None
+
 ffibuilder.set_source(
     "_faest_cffi",  # Name of the generated Python module
     """
@@ -349,9 +363,9 @@ ffibuilder.set_source(
         #include "faest_em_256s.h"
     """,
     libraries=['faest'],  # Link to libfaest.so / libfaest.dll / libfaest.a
-    library_dirs=[build_dir],  # Where to find the library
+    library_dirs=[build_dir],  # Where to find the library at build time
     include_dirs=[build_dir, src_dir],  # Where to find the headers (both build and source)
-    runtime_library_dirs=[build_dir] if system in ['linux', 'darwin'] else None,  # Set rpath for runtime library search
+    runtime_library_dirs=runtime_lib_dirs,  # Set rpath for runtime library search
 )
 
 if __name__ == "__main__":
