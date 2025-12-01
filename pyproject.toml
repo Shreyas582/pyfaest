@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Python bindings for FAEST post-quantum signature scheme"
 readme = "README.md"
 requires-python = ">=3.7"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name = "PyFAEST Contributors"}
 ]
@@ -35,11 +35,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/faest-sign/faest-ref"
-Documentation = "https://github.com/faest-sign/faest-ref/tree/main/pyfaest"
-Repository = "https://github.com/faest-sign/faest-ref"
-"Bug Tracker" = "https://github.com/faest-sign/faest-ref/issues"
-Changelog = "https://github.com/faest-sign/faest-ref/blob/main/pyfaest/CHANGELOG.md"
+Homepage = "https://github.com/Shreyas582/pyfaest"
+Documentation = "https://github.com/Shreyas582/pyfaest/blob/main/README.md"
+Repository = "https://github.com/Shreyas582/pyfaest"
+"Bug Tracker" = "https://github.com/Shreyas582/pyfaest/issues"
+Changelog = "https://github.com/Shreyas582/pyfaest/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
