@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=60", "wheel", "cffi>=1.15.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyfaest"
+version = "1.0.0"
+description = "Python bindings for FAEST post-quantum signature scheme"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+authors = [
+    {name = "PyFAEST Contributors"}
+]
+keywords = ["cryptography", "post-quantum", "signatures", "faest", "pqc", "quantum-resistant"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Security :: Cryptography",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: C",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "cffi>=1.15.0",
+    "setuptools>=60.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/faest-sign/faest-ref"
+Documentation = "https://github.com/faest-sign/faest-ref/tree/main/pyfaest"
+Repository = "https://github.com/faest-sign/faest-ref"
+"Bug Tracker" = "https://github.com/faest-sign/faest-ref/issues"
+Changelog = "https://github.com/faest-sign/faest-ref/blob/main/pyfaest/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
