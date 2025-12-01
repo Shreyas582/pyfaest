@@ -68,6 +68,5 @@ setup(
         'setuptools>=60.0.0',
     ],
     cffi_modules=['faest_build.py:ffibuilder'],
-    include_package_data=True,
     zip_safe=False,
 )
