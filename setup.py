@@ -33,14 +33,12 @@ setup(
     packages=find_packages(exclude=['scripts', 'scripts.*', 'tests', 'tests.*']) + [
         'lib', 'lib.linux', 'lib.linux.x86_64',
         'lib.macos', 'lib.macos.arm64', 'lib.macos.x86_64',
-        'lib.windows', 'lib.windows.x64',
         'include'
     ],
     package_data={
         'lib.linux.x86_64': ['*.so*'],
         'lib.macos.arm64': ['*.dylib'],
         'lib.macos.x86_64': ['*.dylib'],
-        'lib.windows.x64': ['*.dll'],
         'include': ['*.h'],
     },
     include_package_data=True,

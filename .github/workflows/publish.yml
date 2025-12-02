@@ -15,6 +15,7 @@ jobs:
   build-libraries:
     name: Build FAEST libraries for all platforms
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -23,11 +24,9 @@ jobs:
           - os: macos-latest
             platform: macos
             arch: arm64
-          - os: windows-latest
-            platform: windows
-            arch: x64
     
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     
     steps:
     - name: Checkout code
@@ -49,16 +48,12 @@ jobs:
       run: |
         brew install meson ninja
     
-    - name: Install build dependencies (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        pip install meson ninja
-    
     - name: Clone faest-ref
       run: |
         git clone --depth=1 https://github.com/faest-sign/faest-ref.git
     
     - name: Build FAEST library
+      timeout-minutes: 20
       run: |
         cd faest-ref
         meson setup build
@@ -68,23 +63,15 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
-        cp faest-ref/build/libfaest.so* lib/${{ matrix.platform }}/${{ matrix.arch }}/
+        find faest-ref/build -name "libfaest.so*" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
         ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
     
     - name: Prepare libraries (macOS)
       if: matrix.os == 'macos-latest'
       run: |
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
-        cp faest-ref/build/libfaest*.dylib lib/${{ matrix.platform }}/${{ matrix.arch }}/ || true
+        find faest-ref/build -name "libfaest*.dylib" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
         ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
-    
-    - name: Prepare libraries (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Force -Path lib/${{ matrix.platform }}/${{ matrix.arch }}
-        Copy-Item faest-ref/build/*.dll lib/${{ matrix.platform }}/${{ matrix.arch }}/ -ErrorAction SilentlyContinue
-        Get-ChildItem lib/${{ matrix.platform }}/${{ matrix.arch }}/
     
     - name: Prepare headers
       run: |
