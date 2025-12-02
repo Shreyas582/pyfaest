@@ -113,21 +113,36 @@ jobs:
       with:
         path: artifacts
 
+    - name: Debug: Show downloaded artifacts
+      run: |
+        echo "Downloaded artifacts:"
+        find artifacts -type f
+        ls -la artifacts/
+
     - name: Combine libraries from all platforms
       run: |
         mkdir -p lib include
         
-        # Copy all platform libraries
-        find artifacts -name "lib" -type d -exec cp -r {}/* lib/ \; 2>/dev/null || true
+        # Copy Linux libraries
+        if [ -d "artifacts/faest-linux-x86_64/lib" ]; then
+          cp -rv artifacts/faest-linux-x86_64/lib/* lib/
+        fi
         
-        # Copy headers (should be same from any platform)
-        find artifacts -name "include" -type d -exec cp -r {}/* include/ \; 2>/dev/null || true
+        # Copy macOS libraries
+        if [ -d "artifacts/faest-macos-arm64/lib" ]; then
+          cp -rv artifacts/faest-macos-arm64/lib/* lib/
+        fi
+        
+        # Copy headers from any artifact (should be same)
+        if [ -d "artifacts/faest-linux-x86_64/include" ]; then
+          cp -rv artifacts/faest-linux-x86_64/include/* include/
+        elif [ -d "artifacts/faest-macos-arm64/include" ]; then
+          cp -rv artifacts/faest-macos-arm64/include/* include/
+        fi
         
         # Show what we have
-        echo "Libraries:"
+        echo "Combined libraries:"
         find lib -type f
-        echo "Headers:"
-        ls include/*.h | wc -l
 
     - name: Add __init__.py files to make packages
       run: |
