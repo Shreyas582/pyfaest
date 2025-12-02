@@ -135,13 +135,26 @@ jobs:
         find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
         echo "# Include package" > include/__init__.py
 
+    - name: Verify library structure before building
+      run: |
+        echo "Library structure:"
+        find lib -type f -name "*.so*" -o -name "*.dylib"
+        echo "Headers:"
+        ls include/*.h | head -5 || echo "No headers found"
+        
+        # Ensure we have at least Linux libraries
+        if [ ! -f lib/linux/x86_64/libfaest.so.1.0.0 ]; then
+          echo "ERROR: Linux libraries not found!"
+          exit 1
+        fi
+
     - name: Clean dist directory
       run: |
         rm -rf dist/ build/ *.egg-info
 
     - name: Build distribution
       run: |
-        python -m build --sdist
+        python setup.py sdist
 
     - name: Check distribution
       run: |
