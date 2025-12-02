@@ -112,13 +112,13 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts
-
-    - name: Debug: Show downloaded artifacts
+    
+    - name: Show downloaded artifacts
       run: |
         echo "Downloaded artifacts:"
         find artifacts -type f
         ls -la artifacts/
-
+    
     - name: Combine libraries from all platforms
       run: |
         mkdir -p lib include
