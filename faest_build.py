@@ -176,11 +176,7 @@ ffibuilder.cdef("""
     void faest_em_256s_clear_private_key(uint8_t* key);
 """)
 
-# Skip library setup when running sdist (we just want to package files)
-if 'sdist' in sys.argv:
-    print("Running sdist - skipping library configuration")
-    # Don't call set_source, just exit. The cffi_modules won't run during sdist.
-    sys.exit(0)
+# Note: When running sdist, cffi_modules is empty so this script won't be executed
 
 # Determine paths with priority:
 # 1. Bundled libraries (for PyPI distribution)

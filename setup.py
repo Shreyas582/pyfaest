@@ -14,6 +14,9 @@ if os.path.exists(readme_file):
 else:
     long_description = "Python bindings for FAEST post-quantum signature scheme"
 
+# Only build CFFI modules when installing, not when creating source distribution
+cffi_modules_list = [] if 'sdist' in sys.argv else ['faest_build.py:ffibuilder']
+
 setup(
     name='pyfaest',
     version='1.0.6',
@@ -69,6 +72,6 @@ setup(
         'cffi>=1.15.0',
         'setuptools>=60.0.0',
     ],
-    cffi_modules=['faest_build.py:ffibuilder'],
+    cffi_modules=cffi_modules_list,
     zip_safe=False,
 )
