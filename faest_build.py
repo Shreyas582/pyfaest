@@ -208,8 +208,16 @@ has_bundled_lib = False
 if bundled_lib_dir and os.path.exists(bundled_include_dir):
     # Look for library files in the bundled directory
     if os.path.exists(bundled_lib_dir):
-        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest') and (f.endswith('.so') or f.endswith('.dylib') or f.endswith('.dll') or f.endswith('.a'))]
+        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest') and ('.so' in f or '.dylib' in f or '.dll' in f or f.endswith('.a'))]
         has_bundled_lib = len(lib_files) > 0
+        if has_bundled_lib:
+            print(f"Found bundled library files: {lib_files}")
+        else:
+            print(f"No library files found in {bundled_lib_dir}")
+            print(f"  Directory exists: {os.path.exists(bundled_lib_dir)}")
+            print(f"  Contents: {os.listdir(bundled_lib_dir) if os.path.exists(bundled_lib_dir) else 'N/A'}")
+    else:
+        print(f"Bundled lib directory does not exist: {bundled_lib_dir}")
 
 if has_bundled_lib:
     # Use bundled libraries (installed from PyPI or after running prepare_release.sh)
