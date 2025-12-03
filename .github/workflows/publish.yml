@@ -64,14 +64,20 @@ jobs:
       run: |
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
         find faest-ref/build -name "libfaest.so*" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
-        ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
+        cd lib/${{ matrix.platform }}/${{ matrix.arch }}
+        # Create symlink for linker
+        ln -sf libfaest.so.1.0.0 libfaest.so
+        ls -lh
     
     - name: Prepare libraries (macOS)
       if: matrix.os == 'macos-latest'
       run: |
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
         find faest-ref/build -name "libfaest*.dylib" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
-        ls -lh lib/${{ matrix.platform }}/${{ matrix.arch }}/
+        cd lib/${{ matrix.platform }}/${{ matrix.arch }}
+        # Create symlink for linker
+        ln -sf libfaest.1.dylib libfaest.dylib
+        ls -lh
     
     - name: Prepare headers
       run: |
