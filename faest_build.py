@@ -176,6 +176,12 @@ ffibuilder.cdef("""
     void faest_em_256s_clear_private_key(uint8_t* key);
 """)
 
+# Skip library setup when running sdist (we just want to package files)
+if 'sdist' in sys.argv:
+    print("Running sdist - skipping library configuration")
+    # Don't call set_source, just exit. The cffi_modules won't run during sdist.
+    sys.exit(0)
+
 # Determine paths with priority:
 # 1. Bundled libraries (for PyPI distribution)
 # 2. Environment variables (for development with external faest-ref)
@@ -220,7 +226,6 @@ else:
     # Development mode: check environment variables or relative paths
     build_dir = os.environ.get('FAEST_BUILD_DIR', os.path.join(script_dir, '..', 'build'))
     src_dir = os.environ.get('FAEST_SRC_DIR', os.path.join(script_dir, '..'))
-    
     # If build directory doesn't exist, try to download pre-built binaries or build from source
     if not os.path.exists(build_dir):
         print(f"FAEST build directory not found: {build_dir}")
