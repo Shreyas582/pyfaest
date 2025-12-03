@@ -65,8 +65,9 @@ jobs:
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
         find faest-ref/build -name "libfaest.so*" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
         cd lib/${{ matrix.platform }}/${{ matrix.arch }}
-        # Create symlink for linker
-        ln -sf libfaest.so.1.0.0 libfaest.so
+        # Create full symlink chain: libfaest.so -> libfaest.so.1 -> libfaest.so.1.0.0
+        ln -sf libfaest.so.1.0.0 libfaest.so.1
+        ln -sf libfaest.so.1 libfaest.so
         ls -lh
     
     - name: Prepare libraries (macOS)
@@ -75,7 +76,7 @@ jobs:
         mkdir -p lib/${{ matrix.platform }}/${{ matrix.arch }}
         find faest-ref/build -name "libfaest*.dylib" -type f -exec cp {} lib/${{ matrix.platform }}/${{ matrix.arch }}/ \;
         cd lib/${{ matrix.platform }}/${{ matrix.arch }}
-        # Create symlink for linker
+        # Create symlink chain for macOS
         ln -sf libfaest.1.dylib libfaest.dylib
         ls -lh
     
