@@ -178,9 +178,17 @@ jobs:
       run: |
         rm -rf dist/ build/ *.egg-info
 
-    - name: Build distribution
+    - name: Install wheel builder
+      run: |
+        pip install wheel
+
+    - name: Build source distribution
       run: |
         python setup.py sdist
+        
+    - name: Build wheel
+      run: |
+        python setup.py bdist_wheel
         
     - name: Verify tarball contents
       run: |
@@ -190,8 +198,11 @@ jobs:
     - name: Check distribution
       run: |
         twine check dist/*
-        tar -tzf dist/*.tar.gz | grep -E '(lib/|include/)' | head -10
+        echo "Built distributions:"
         ls -lh dist/
+        echo ""
+        echo "Tarball contents (sample):"
+        tar -tzf dist/*.tar.gz | grep -E '(lib/|include/)' | head -10
 
     - name: Publish to Test PyPI
       if: github.event_name == 'workflow_dispatch' && github.event.inputs.test_pypi == 'true'
