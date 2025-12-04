@@ -10,6 +10,7 @@ Thank you for your interest in contributing to PyFAEST! This document provides g
 - [Development Setup](#development-setup)
 - [Coding Standards](#coding-standards)
 - [Testing](#testing)
+- [Signing Your Commits](#signing-your-commits)
 - [Pull Request Process](#pull-request-process)
 - [Reporting Bugs](#reporting-bugs)
 - [Suggesting Enhancements](#suggesting-enhancements)
@@ -163,6 +164,119 @@ def test_sign_with_invalid_key():
 - Aim for >90% coverage for new code
 - Critical paths should have 100% coverage
 
+## Signing Your Commits
+
+**All commits to the main branch must be GPG signed.** This ensures commit authenticity and prevents impersonation.
+
+### Why Sign Commits?
+
+- ✅ Verifies you are the actual author
+- ✅ Prevents unauthorized commits in your name
+- ✅ Industry best practice for security projects
+- ✅ Shows a "Verified" badge on GitHub
+
+### Setup Instructions
+
+#### 1. Generate a GPG Key
+
+```bash
+# Generate key
+gpg --full-generate-key
+
+# When prompted:
+# - Choose: (1) RSA and RSA
+# - Key size: 4096
+# - Expiration: 0 (no expiration) or set as desired
+# - Enter your name and email (must match your GitHub email)
+```
+
+#### 2. Get Your Key ID
+
+```bash
+# List your keys
+gpg --list-secret-keys --keyid-format=long
+
+# Output looks like:
+# sec   rsa4096/ABCD1234EFGH5678 2025-12-03
+#       Your key ID is: ABCD1234EFGH5678
+
+# Export your public key
+gpg --armor --export ABCD1234EFGH5678
+```
+
+#### 3. Add Key to GitHub
+
+1. Copy the entire output from the export command (including `-----BEGIN PGP PUBLIC KEY BLOCK-----` and `-----END PGP PUBLIC KEY BLOCK-----`)
+2. Go to [GitHub Settings → SSH and GPG keys](https://github.com/settings/keys)
+3. Click **New GPG key**
+4. Paste your public key
+5. Click **Add GPG key**
+
+#### 4. Configure Git
+
+```bash
+# Set your signing key (replace with YOUR key ID)
+git config --global user.signingkey ABCD1234EFGH5678
+
+# Enable automatic signing for all commits
+git config --global commit.gpgsign true
+
+# Enable automatic signing for all tags
+git config --global tag.gpgsign true
+
+# Verify your email matches GitHub
+git config --global user.email "your.email@example.com"
+```
+
+#### 5. For Windows Users
+
+```powershell
+# Tell Git where to find GPG
+git config --global gpg.program "C:\Program Files (x86)\GnuPG\bin\gpg.exe"
+
+# Or if using GPG4Win:
+git config --global gpg.program "C:\Program Files (x86)\GnuPG\bin\gpg.exe"
+```
+
+### Verify It Works
+
+```bash
+# Make a test commit
+git commit --allow-empty -m "Test signed commit"
+
+# Verify the signature
+git log --show-signature -1
+
+# You should see "gpg: Good signature from..."
+```
+
+### Troubleshooting
+
+**"gpg: signing failed: Inappropriate ioctl for device"** (Linux/macOS):
+```bash
+export GPG_TTY=$(tty)
+echo 'export GPG_TTY=$(tty)' >> ~/.bashrc  # or ~/.zshrc
+```
+
+**"gpg: signing failed: No secret key"**:
+```bash
+# Check your key is listed
+gpg --list-secret-keys
+
+# Verify git config
+git config --global user.signingkey
+```
+
+**Commit rejected: "Commit signature verification failed"**:
+- Ensure your GPG key is added to GitHub
+- Verify your git email matches the key email
+- Check that your key hasn't expired
+
+### Additional Resources
+
+- [GitHub's GPG Documentation](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification)
+- [Git Tools - Signing Your Work](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work)
+
 ## Pull Request Process
 
 ### Before Submitting
@@ -173,14 +287,22 @@ def test_sign_with_invalid_key():
    git rebase upstream/main
    ```
 
-2. **Run tests** and ensure they pass:
+2. **Ensure commits are signed**:
+   ```bash
+   # Check if your commits are signed
+   git log --show-signature -1
+   
+   # If not signed, configure GPG (see "Signing Your Commits" section above)
+   ```
+
+3. **Run tests** and ensure they pass:
    ```bash
    pytest tests/ -v
    ```
 
-3. **Update documentation** if needed
+4. **Update documentation** if needed
 
-4. **Update CHANGELOG.md** under `[Unreleased]` section
+5. **Update CHANGELOG.md** under `[Unreleased]` section
 
 ### PR Guidelines
 
@@ -211,6 +333,7 @@ How was this tested?
 - [ ] Documentation updated
 - [ ] CHANGELOG.md updated
 - [ ] All tests pass
+- [ ] Commits are signed (GPG)
 ```
 
 ### Review Process
