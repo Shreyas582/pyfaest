@@ -93,9 +93,69 @@ jobs:
           lib/
           include/
 
-  build-and-publish:
-    name: Build and Publish to PyPI
+  build-wheels:
+    name: Build wheels for ${{ matrix.platform }}
     needs: build-libraries
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools
+        if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          pip install auditwheel patchelf
+        fi
+
+    - name: Download library artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: faest-${{ matrix.platform }}-${{ matrix.arch }}
+
+    - name: Add __init__.py files to make packages
+      run: |
+        echo "# Library package" > lib/__init__.py
+        find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
+        echo "# Include package" > include/__init__.py
+
+    - name: Build wheel
+      run: |
+        python setup.py bdist_wheel
+
+    - name: Repair wheel (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_x86_64 || echo "auditwheel failed, keeping original"
+        rm -f dist/*-linux_x86_64.whl
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheel-${{ matrix.platform }}-${{ matrix.arch }}
+        path: dist/*.whl
+
+  publish:
+    name: Publish to PyPI
+    needs: [build-libraries, build-wheels]
     runs-on: ubuntu-latest
     environment: release
 
@@ -113,9 +173,9 @@ jobs:
     - name: Install build dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install build twine
+        pip install twine wheel
 
-    - name: Download all library artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts
@@ -126,7 +186,7 @@ jobs:
         find artifacts -type f
         ls -la artifacts/
     
-    - name: Combine libraries from all platforms
+    - name: Combine libraries for sdist
       run: |
         mkdir -p lib include
         
@@ -178,23 +238,18 @@ jobs:
       run: |
         rm -rf dist/ build/ *.egg-info
 
-    - name: Install build tools
-      run: |
-        pip install wheel auditwheel patchelf
-
     - name: Build source distribution
       run: |
+        echo "# Library package" > lib/__init__.py
+        find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
+        echo "# Include package" > include/__init__.py
         python setup.py sdist
         
-    - name: Build wheel
+    - name: Copy wheels to dist
       run: |
-        python setup.py bdist_wheel
-        
-    - name: Repair wheel for PyPI (add manylinux tag)
-      run: |
-        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_x86_64 || echo "auditwheel failed, keeping original wheel"
-        # Remove the original linux_x86_64 wheel if repair succeeded
-        rm -f dist/*-linux_x86_64.whl
+        mkdir -p dist
+        find artifacts -name "*.whl" -exec cp {} dist/ \;
+        ls -lh dist/
         
     - name: Verify tarball contents
       run: |
