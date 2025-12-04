@@ -7,7 +7,7 @@ name = "pyfaest"
 version = "1.0.15"
 description = "Python bindings for FAEST post-quantum signature scheme"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
     {name = "PyFAEST Contributors"}
@@ -19,15 +19,17 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Security :: Cryptography",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: C",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
 ]
 dependencies = [
     "cffi>=1.15.0",
