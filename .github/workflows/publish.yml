@@ -103,10 +103,6 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x86_64
-            python-version: '3.7'
-          - os: ubuntu-latest
-            platform: linux
-            arch: x86_64
             python-version: '3.8'
           - os: ubuntu-latest
             platform: linux
@@ -132,10 +128,6 @@ jobs:
             platform: linux
             arch: x86_64
             python-version: '3.14-dev'
-          - os: macos-latest
-            platform: macos
-            arch: arm64
-            python-version: '3.7'
           - os: macos-latest
             platform: macos
             arch: arm64
@@ -184,7 +176,7 @@ jobs:
     - name: Install build tools
       run: |
         python -m pip install --upgrade pip
-        pip install wheel setuptools
+        pip install wheel setuptools cffi pycparser
         if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
           pip install auditwheel patchelf
         fi
@@ -202,7 +194,7 @@ jobs:
 
     - name: Build wheel
       run: |
-        python setup.py bdist_wheel
+        pip wheel . --no-deps -w dist/
 
     - name: Repair wheel (Linux only)
       if: matrix.os == 'ubuntu-latest'
