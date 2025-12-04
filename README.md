@@ -1,7 +1,7 @@
 # PyFAEST - Python Bindings for FAEST
 
 [![PyPI version](https://badge.fury.io/py/pyfaest.svg)](https://badge.fury.io/py/pyfaest)
-[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Python wrapper for the FAEST (Fast AES-based Signature with Tight security) post-quantum digital signature scheme.
@@ -24,6 +24,13 @@ FAEST is a post-quantum signature scheme submitted to the NIST PQC standardizati
 pip install pyfaest
 ```
 
+**Pre-built wheels available for:**
+- Linux x86_64 (manylinux)
+- macOS arm64 (Apple Silicon)
+- Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
+
+No compilation required! For other platforms, see installation guide.
+
 ### From Source
 
 ```bash
@@ -31,8 +38,6 @@ git clone https://github.com/Shreyas582/pyfaest.git
 cd pyfaest
 pip install -e .
 ```
-
-**Note:** Currently supports Linux only. Windows users should use WSL.
 
 ## Quick Start
 
@@ -161,9 +166,11 @@ Complete examples in the `examples/` directory:
 
 ## Requirements
 
-- Python 3.7 or higher
-- Linux (WSL for Windows users)
+- Python 3.8 or higher
+- Linux x86_64, macOS arm64, or Windows (via WSL)
 - CFFI >= 1.15.0 (automatically installed)
+
+**Note:** Pre-built wheels eliminate the need for compilers or build tools.
 
 ## Security Considerations
 
@@ -189,14 +196,14 @@ Typical performance on modern hardware (single core):
 
 ## Platform Support
 
-| Platform        | Status      | Notes                    |
-|----------------|-------------|--------------------------|
-| Linux x86_64   | ✅ Supported | Primary platform         |
-| Linux aarch64  | ✅ Supported | ARM support              |
-| macOS x86_64   | 🚧 Planned  | Coming soon              |
-| macOS ARM64    | 🚧 Planned  | Coming soon              |
-| Windows (WSL)  | ✅ Supported | Use WSL for now          |
-| Windows native | 🚧 Planned  | Future release           |
+| Platform        | Status      | Notes                              |
+|----------------|-------------|------------------------------------|
+| Linux x86_64   | ✅ Supported | Pre-built wheels                   |
+| macOS arm64    | ✅ Supported | Pre-built wheels (Apple Silicon)   |
+| Windows (WSL)  | ✅ Supported | Use Linux wheels in WSL            |
+| macOS x86_64   | ⚠️ Source   | Build from source (Intel Macs)     |
+| Linux aarch64  | ⚠️ Source   | Build from source (ARM64 Linux)    |
+| Windows native | ❌ Not supported | Use WSL instead                    |
 
 ## Development
 

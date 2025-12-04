@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - TBD
+## [1.0.15] - 2025-12-03
 
 ### Added
-- Initial release of PyFAEST
+- Initial stable release of PyFAEST
+- Pre-built wheels for Python 3.8-3.14 on Linux x86_64 and macOS arm64
 - Python bindings for all 12 FAEST parameter sets
   - FAEST-128F, FAEST-128S (NIST Level 1)
   - FAEST-192F, FAEST-192S (NIST Level 3)
@@ -25,23 +26,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite (37 tests)
 - Example scripts demonstrating all features
 - Full documentation
-- Bundled FAEST library support for PyPI distribution
+- Bundled FAEST libraries in source distribution
 - Automatic platform detection for bundled libraries
 - Scripts for preparing releases and updating libraries
-- Comprehensive publishing guide
 
-### Changed
-- Build script now prioritizes bundled libraries over external paths
-- Updated setup.py for PyPI packaging with bundled libraries
+### Fixed
+- Modern PEP 517 compliant wheel building with `pip wheel`
+- Missing dependencies (wheel, cffi, pycparser) now properly installed
+- Removed Python 3.7 support (EOL and unavailable on modern runners)
 
 ### FAEST Library Version
 - Based on FAEST reference implementation v2.0.4
 - Compiled from faest-ref main branch
 
 ### Platform Support
-- Linux x86_64 (WSL and native)
-- Python 3.7 through 3.12
+- ✅ Linux x86_64 - Pre-built wheels, no compilation required
+- ✅ macOS arm64 - Pre-built wheels, no compilation required
+- ✅ Windows via WSL - Use Linux wheels in WSL environment
+- Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14-dev
 
 ### Known Limitations
-- Currently supports Linux only (WSL for Windows users)
-- macOS and native Windows support planned for future releases
+- Windows native support not included (use WSL)
+- macOS x86_64 (Intel) not included (builds timeout on CI, use source install or Rosetta 2)
+- Source builds available as fallback for unsupported platforms

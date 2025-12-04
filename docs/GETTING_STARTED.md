@@ -36,21 +36,21 @@ print("PyFAEST is working!")
 ### Method 1: From PyPI (Recommended)
 
 **Prerequisites:**
-- Linux (x86_64 or ARM64) or WSL on Windows
-- Python 3.7+
+- Linux (x86_64), macOS (arm64), or WSL on Windows
+- Python 3.8+
 
 **Install:**
 ```bash
 pip install pyfaest
 ```
 
-That's it! The package includes pre-compiled FAEST libraries.
+Pre-built wheels available! No compilation required for Python 3.8-3.14.
 
 ### Method 2: From Source (Development)
 
 **Prerequisites:**
-- Linux or WSL on Windows
-- Python 3.7+
+- Linux, macOS, or WSL on Windows
+- Python 3.8+
 - FAEST C library (faest-ref) compiled
 - Git
 

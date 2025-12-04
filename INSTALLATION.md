@@ -10,8 +10,8 @@ PyFAEST can be installed in two ways:
 
 ### Prerequisites
 
-- **Linux x86_64** or **ARM64** (native or WSL on Windows)
-- Python 3.7 or higher
+- **Linux x86_64** or **macOS arm64** (or WSL on Windows)
+- Python 3.8 or higher
 - pip
 
 ### Installation
@@ -20,7 +20,12 @@ PyFAEST can be installed in two ways:
 pip install pyfaest
 ```
 
-That's it! The PyPI package includes pre-compiled FAEST libraries for Linux.
+That's it! The PyPI package includes pre-built wheels for:
+- **Linux x86_64** (manylinux_2_17)
+- **macOS arm64** (Apple Silicon)
+- **Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14**
+
+No compiler or build tools needed! For other platforms, PyPI will fall back to the source distribution with bundled libraries.
 
 ### Quick Test
 
@@ -42,11 +47,12 @@ This method is for developers who want to:
 - Contribute to PyFAEST
 - Use the latest development version
 - Work with a custom FAEST library build
+- Use unsupported platforms (macOS Intel, Linux aarch64)
 
 ### Prerequisites
 
-- **Linux x86_64** or **ARM64** (use WSL on Windows)
-- Python 3.7 or higher
+- **Linux x86_64**, **ARM64**, or **macOS** (use WSL on Windows)
+- Python 3.8 or higher
 - FAEST C library (faest-ref) compiled
 - Git
 
