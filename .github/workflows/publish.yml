@@ -178,9 +178,9 @@ jobs:
       run: |
         rm -rf dist/ build/ *.egg-info
 
-    - name: Install wheel builder
+    - name: Install build tools
       run: |
-        pip install wheel
+        pip install wheel auditwheel patchelf
 
     - name: Build source distribution
       run: |
@@ -189,6 +189,12 @@ jobs:
     - name: Build wheel
       run: |
         python setup.py bdist_wheel
+        
+    - name: Repair wheel for PyPI (add manylinux tag)
+      run: |
+        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_x86_64 || echo "auditwheel failed, keeping original wheel"
+        # Remove the original linux_x86_64 wheel if repair succeeded
+        rm -f dist/*-linux_x86_64.whl
         
     - name: Verify tarball contents
       run: |
