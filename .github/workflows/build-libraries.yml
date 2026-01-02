@@ -73,6 +73,7 @@ jobs:
         cpp = 'aarch64-linux-gnu-g++'
         ar = 'aarch64-linux-gnu-ar'
         strip = 'aarch64-linux-gnu-strip'
+        pkg-config = 'aarch64-linux-gnu-pkg-config'
         
         [host_machine]
         system = 'linux'
@@ -80,7 +81,8 @@ jobs:
         cpu = 'aarch64'
         endian = 'little'
         EOF
-        meson setup build --cross-file=aarch64-cross.txt
+        # Build without OpenSSL (SHAKE-based randomness works fine for FAEST)
+        meson setup build --cross-file=aarch64-cross.txt -Dopenssl=disabled
         meson compile -C build
     
     - name: Prepare bundled libraries
