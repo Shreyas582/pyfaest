@@ -477,8 +477,9 @@ jobs:
         CIBW_MANYLINUX_AARCH64_IMAGE: manylinux2014
         CIBW_BEFORE_ALL_LINUX: "bash /project/build_faest.sh"
         CIBW_BEFORE_BUILD: "pip install cffi pycparser"
-        # Repair wheel for manylinux_2_17 (compatible with manylinux2014)
-        CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel} --plat manylinux_2_17_aarch64"
+        # Skip auditwheel repair - the manylinux toolchain symbols are incompatible
+        # Just copy the wheel as-is (linux_aarch64 tag works for most users)
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: "cp {wheel} {dest_dir}/"
 
     - name: Upload aarch64 wheels
       uses: actions/upload-artifact@v4

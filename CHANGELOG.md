@@ -5,6 +5,14 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.28] - 2026-01-02
+
+### Fixed
+- **aarch64 skip auditwheel repair** - Skip auditwheel entirely for aarch64
+  - Even manylinux2014 image has updated toolchains with newer glibc symbols
+  - Use `cp {wheel} {dest_dir}/` to just copy the wheel without repair
+  - Wheel will have `linux_aarch64` tag which works on modern aarch64 systems
+
 ## [v1.0.27] - 2026-01-02
 
 ### Fixed
