@@ -412,9 +412,9 @@ jobs:
         echo "=== Meson build output ==="
         ls -la build/libfaest*
         
-        # Copy library to project
+        # Copy library files only (not directories like .p)
         mkdir -p /project/lib/linux/aarch64
-        cp -v build/libfaest.so* /project/lib/linux/aarch64/
+        find build -maxdepth 1 -name 'libfaest.so*' -type f -exec cp -v {} /project/lib/linux/aarch64/ \;
         cd /project/lib/linux/aarch64
         
         # Create symlinks robustly - find the actual versioned library

@@ -5,17 +5,25 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.0.23] - 2026-01-02
+## [v1.0.25] - 2026-01-02
 
-### Fixed- **aarch64 symlink creation** - Fixed robust symlink creation for libfaest.so
-  - Detect actual library version pattern from meson output (e.g., `libfaest.so.1.0.0` or `libfaest.so.1`)
+### Fixed
+- **aarch64 cp command fix** - Use `find` to copy only library files, not meson build directories
+  - Meson creates `libfaest.so.1.0.0.p` directory which was causing `cp` to fail
+  - Changed from `cp -v build/libfaest.so*` to `find build -name 'libfaest.so*' -type f -exec cp`
+
+## [v1.0.24] - 2026-01-02
+
+### Fixed
+- **aarch64 symlink creation** - Fixed robust symlink creation for libfaest.so
+  - Detect actual library version pattern from meson output
   - Create proper symlink chain regardless of versioning scheme
   - Add fallback to ensure `libfaest.so` always exists for linker
-  - Add debug output to show meson build results
 
 ## [v1.0.23] - 2026-01-02
 
-### Fixed- **aarch64 build script approach** - Use external build script instead of inline YAML
+### Fixed
+- **aarch64 build script approach** - Use external build script instead of inline YAML
   - Create `build_faest.sh` script to build library inside manylinux container
   - Remove dependency on pre-built artifacts for aarch64 (build everything from source)
   - Install meson/ninja via pip for better compatibility with manylinux
