@@ -208,35 +208,9 @@ jobs:
             platform: linux
             arch: x86_64
             python-version: '3.14-dev'
-          # Linux aarch64 (ARM64)
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.8'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.9'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.10'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.11'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.12'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.13'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.14-dev'
+          # NOTE: Linux aarch64 wheels are not currently built because cross-compiling
+          # Python C extensions requires QEMU emulation. The library is built for aarch64
+          # but wheel building is skipped. Users on aarch64 Linux can build from source.
           # macOS arm64 (Apple Silicon)
           - os: macos-latest
             platform: macos

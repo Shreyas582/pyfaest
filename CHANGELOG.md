@@ -5,7 +5,7 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.0.19] - 2026-01-02
+## [v1.0.20] - 2026-01-02
 
 ### Fixed
 - **macOS x86_64 cross-compilation** - Fixed wheel building for Intel Macs
@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Reduced macOS x86_64 Python versions to 3.9-3.12 for stability
+- **Removed Linux aarch64 pre-built wheels** - Cross-compiling Python C extensions requires QEMU emulation which is complex; users on aarch64 Linux can build from source
+
+### Platform Support Summary
+- ✅ Linux x86_64 - Pre-built wheels
+- ⚠️ Linux aarch64 - Build from source (library pre-built, wheel requires local compilation)
+- ✅ macOS arm64 - Pre-built wheels
+- ✅ macOS x86_64 - Pre-built wheels
+- ✅ Windows via WSL - Use Linux wheels
 
 ## [v1.0.18] - 2026-01-02
 
