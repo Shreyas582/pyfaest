@@ -28,7 +28,7 @@ Available parameter sets:
     - 'em_128f', 'em_128s', 'em_192f', 'em_192s', 'em_256f', 'em_256s': Extended mode variants
 """
 
-__version__ = '1.0.0'
+__version__ = '1.0.16'
 __author__ = 'PyFAEST Contributors'
 
 from .core import (
