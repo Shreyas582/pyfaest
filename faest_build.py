@@ -190,6 +190,20 @@ import platform
 system = platform.system().lower()
 machine = platform.machine().lower()
 
+# Check for cross-compilation via _PYTHON_HOST_PLATFORM (e.g., "macosx-10.14-x86_64")
+host_platform = os.environ.get('_PYTHON_HOST_PLATFORM', '')
+if host_platform:
+    print(f"Cross-compile: _PYTHON_HOST_PLATFORM = {host_platform}")
+    if 'x86_64' in host_platform:
+        machine = 'x86_64'
+    elif 'arm64' in host_platform or 'aarch64' in host_platform:
+        machine = 'arm64' if 'darwin' in host_platform or 'macos' in host_platform else 'aarch64'
+    # Update system if specified
+    if 'macos' in host_platform or 'darwin' in host_platform:
+        system = 'darwin'
+    elif 'linux' in host_platform:
+        system = 'linux'
+
 # Normalize machine architecture names
 if machine in ['x86_64', 'amd64']:
     machine = 'x86_64'
@@ -239,69 +253,21 @@ else:
     # Development mode: check environment variables or relative paths
     build_dir = os.environ.get('FAEST_BUILD_DIR', os.path.join(script_dir, '..', 'build'))
     src_dir = os.environ.get('FAEST_SRC_DIR', os.path.join(script_dir, '..'))
-    # If build directory doesn't exist, try to download pre-built binaries or build from source
+    
+    # If build directory doesn't exist, try to build from source
     if not os.path.exists(build_dir):
         print(f"FAEST build directory not found: {build_dir}")
         
-        # Try to download pre-built release from GitHub
-        faest_version = "v2.0.4"  # Update this to match the version you want
-        faest_ref_dir = os.path.join(script_dir, '..', 'faest-ref')
+        if system == 'windows':
+            print(f"ERROR: FAEST library not found for Windows", file=sys.stderr)
+            print("", file=sys.stderr)
+            print("Windows source builds are not supported.", file=sys.stderr)
+            print("Please either:", file=sys.stderr)
+            print("  1. Use WSL/Linux to install the package", file=sys.stderr)
+            print("  2. Install from PyPI which includes pre-built wheels", file=sys.stderr)
+            sys.exit(1)
         
-        # Determine the release asset name based on platform
-        if system == 'linux':
-            asset_name = f"faest-{faest_version}-linux-x86_64.tar.gz"
-        elif system == 'darwin':
-            asset_name = f"faest-{faest_version}-macos-x86_64.tar.gz"
-        elif system == 'windows':
-            asset_name = f"faest-{faest_version}-windows-x64.zip"
-        else:
-            asset_name = None
-        
-        downloaded = False
-        if asset_name:
-            release_url = f"https://github.com/faest-sign/faest-ref/releases/download/{faest_version}/{asset_name}"
-            print(f"Attempting to download pre-built binaries from GitHub releases...")
-            print(f"  URL: {release_url}")
-            
-            try:
-                os.makedirs(faest_ref_dir, exist_ok=True)
-                download_path = os.path.join(faest_ref_dir, asset_name)
-                
-                # Download the release asset
-                urllib.request.urlretrieve(release_url, download_path)
-                print(f"✓ Downloaded {asset_name}")
-                
-                # Extract the archive
-                if asset_name.endswith('.tar.gz'):
-                    with tarfile.open(download_path, 'r:gz') as tar:
-                        tar.extractall(faest_ref_dir)
-                elif asset_name.endswith('.zip'):
-                    with zipfile.ZipFile(download_path, 'r') as zip_ref:
-                        zip_ref.extractall(faest_ref_dir)
-                
-                print(f"✓ Extracted pre-built binaries")
-                
-                # Set build_dir and src_dir to the extracted location
-                build_dir = os.path.join(faest_ref_dir, 'lib')
-                src_dir = os.path.join(faest_ref_dir, 'include')
-                downloaded = True
-                
-            except Exception as e:
-                print(f"Warning: Could not download pre-built binaries: {e}")
-                print(f"Will attempt to build from source instead...")
-        
-        # If download failed or not available, build from source
-        if not downloaded:
-            if system == 'windows':
-                print(f"ERROR: FAEST library not found for Windows", file=sys.stderr)
-                print("", file=sys.stderr)
-                print("Pre-built binaries could not be downloaded and Windows source builds are not supported.", file=sys.stderr)
-                print("Please either:", file=sys.stderr)
-                print("  1. Use WSL/Linux to install the package", file=sys.stderr)
-                print("  2. Manually download and extract FAEST binaries", file=sys.stderr)
-                sys.exit(1)
-            
-            print("Attempting to clone and build faest-ref from GitHub...")
+        print("Attempting to clone and build faest-ref from GitHub...")
         
         # Determine where to clone faest-ref
         faest_ref_dir = os.path.join(script_dir, '..', 'faest-ref')
@@ -341,54 +307,92 @@ else:
                     )
                     return True
                 except (subprocess.CalledProcessError, FileNotFoundError):
-                    print(f"{tool_name} not found, installing...")
+                    print(f"{tool_name} not found, installing via pip...")
                     try:
-                        # Try using pip module directly (works in isolated builds)
-                        import pip
-                        pip.main(['install', tool_name])
-                        print(f"✓ Installed {tool_name}")
-                        return True
-                    except (ImportError, AttributeError):
-                        # Fallback to subprocess call
-                        try:
-                            subprocess.run(
+                        # Use subprocess to install - more reliable than pip.main()
+                        result = subprocess.run(
+                            [sys.executable, '-m', 'pip', 'install', '--user', tool_name],
+                            capture_output=True,
+                            text=True
+                        )
+                        if result.returncode != 0:
+                            # Try without --user flag
+                            result = subprocess.run(
                                 [sys.executable, '-m', 'pip', 'install', tool_name],
-                                check=True,
                                 capture_output=True,
                                 text=True
                             )
+                        if result.returncode == 0:
                             print(f"✓ Installed {tool_name}")
+                            # Add user bin to PATH for the current process
+                            user_bin = os.path.expanduser('~/.local/bin')
+                            if user_bin not in os.environ.get('PATH', ''):
+                                os.environ['PATH'] = user_bin + os.pathsep + os.environ.get('PATH', '')
                             return True
-                        except subprocess.CalledProcessError as e:
+                        else:
                             print(f"ERROR: Failed to install {tool_name}", file=sys.stderr)
-                            print(f"  {e.stderr}", file=sys.stderr)
-                            print(f"\nPlease install {tool_name} manually:", file=sys.stderr)
-                            print(f"  pip install {tool_name}", file=sys.stderr)
+                            print(f"  stdout: {result.stdout}", file=sys.stderr)
+                            print(f"  stderr: {result.stderr}", file=sys.stderr)
                             return False
+                    except Exception as e:
+                        print(f"ERROR: Failed to install {tool_name}: {e}", file=sys.stderr)
+                        print(f"\nPlease install {tool_name} manually:", file=sys.stderr)
+                        print(f"  pip install {tool_name}", file=sys.stderr)
+                        return False
             
             if not ensure_build_tool('meson'):
                 sys.exit(1)
             if not ensure_build_tool('ninja'):
                 sys.exit(1)
             
+            # Find meson and ninja executables
+            def find_tool(tool_name):
+                """Find tool in PATH or common locations."""
+                import shutil
+                tool_path = shutil.which(tool_name)
+                if tool_path:
+                    return tool_path
+                # Check user local bin
+                user_bin = os.path.expanduser(f'~/.local/bin/{tool_name}')
+                if os.path.exists(user_bin):
+                    return user_bin
+                # Check Python Scripts directory (Windows/some setups)
+                scripts_dir = os.path.join(os.path.dirname(sys.executable), 'Scripts' if system == 'windows' else '', tool_name)
+                if os.path.exists(scripts_dir):
+                    return scripts_dir
+                return tool_name  # Fallback to just the name
+            
+            meson_cmd = find_tool('meson')
+            ninja_cmd = find_tool('ninja')
+            
             try:
                 # Run meson setup
                 subprocess.run(
-                    ['meson', 'setup', 'build'],
+                    [meson_cmd, 'setup', 'build'],
                     cwd=faest_ref_dir,
                     check=True,
                     capture_output=True,
                     text=True
                 )
                 
-                # Run ninja
-                subprocess.run(
-                    ['ninja', '-C', 'build'],
-                    cwd=faest_ref_dir,
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
+                # Run ninja (or meson compile)
+                try:
+                    subprocess.run(
+                        [ninja_cmd, '-C', 'build'],
+                        cwd=faest_ref_dir,
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    # Fallback to meson compile
+                    subprocess.run(
+                        [meson_cmd, 'compile', '-C', 'build'],
+                        cwd=faest_ref_dir,
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
                 
                 print(f"✓ Successfully built FAEST library in {build_dir}")
             except subprocess.CalledProcessError as e:
@@ -436,6 +440,18 @@ else:
     # For development, use absolute path
     runtime_lib_dirs = [build_dir] if system in ['linux', 'darwin'] else None
 
+# Handle cross-compilation flags
+extra_compile_args = []
+extra_link_args = []
+
+# Check ARCHFLAGS for cross-compilation (used on macOS)
+archflags = os.environ.get('ARCHFLAGS', '')
+if archflags:
+    # Parse ARCHFLAGS and add to compile/link args
+    extra_compile_args.extend(archflags.split())
+    extra_link_args.extend(archflags.split())
+    print(f"Cross-compile: Using ARCHFLAGS = {archflags}")
+
 ffibuilder.set_source(
     "_faest_cffi",  # Name of the generated Python module
     """
@@ -456,6 +472,8 @@ ffibuilder.set_source(
     library_dirs=[build_dir],  # Where to find the library at build time
     include_dirs=[build_dir, src_dir],  # Where to find the headers (both build and source)
     runtime_library_dirs=runtime_lib_dirs,  # Set rpath for runtime library search
+    extra_compile_args=extra_compile_args if extra_compile_args else None,
+    extra_link_args=extra_link_args if extra_link_args else None,
 )
 
 if __name__ == "__main__":
