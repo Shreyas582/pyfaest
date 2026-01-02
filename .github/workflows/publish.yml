@@ -392,29 +392,21 @@ jobs:
       with:
         platforms: arm64
 
-    - name: Download aarch64 library artifacts
+    - name: Download headers from library build
       uses: actions/download-artifact@v4
       with:
         name: faest-linux-aarch64
+        path: faest-artifacts
 
-    - name: Prepare library structure
+    - name: Prepare include directory
       run: |
-        # Show what was downloaded
-        echo "Downloaded artifacts:"
-        find . -name "libfaest*" -o -name "*.h" | head -30
-        ls -laR lib/ || echo "No lib/ directory"
-        
-        # Ensure library symlinks exist
-        cd lib/linux/aarch64
-        [ -f libfaest.so.1.0.0 ] && ln -sf libfaest.so.1.0.0 libfaest.so.1
-        [ -f libfaest.so.1 ] && ln -sf libfaest.so.1 libfaest.so
-        ls -la
-        
-        # Add __init__.py files
-        cd ../../..
-        echo "# Library package" > lib/__init__.py
-        find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
+        # Copy headers (library will be built inside manylinux container)
+        mkdir -p include
+        if [ -d "faest-artifacts/include" ]; then
+          cp -rv faest-artifacts/include/* include/
+        fi
         echo "# Include package" > include/__init__.py
+        ls -la include/
 
     - name: Build aarch64 wheels with cibuildwheel
       uses: pypa/cibuildwheel@v2.21.3
@@ -423,6 +415,31 @@ jobs:
         CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
         CIBW_SKIP: "*-musllinux_*"
         CIBW_PLATFORM: linux
+        # Build libfaest inside manylinux container for correct glibc symbols
+        CIBW_BEFORE_ALL_LINUX: |
+          # Install build tools
+          yum install -y git meson ninja-build gcc gcc-c++ || apt-get update && apt-get install -y git meson ninja-build gcc g++
+          
+          # Clone and build faest-ref
+          git clone --depth=1 https://github.com/faest-sign/faest-ref.git /tmp/faest-ref
+          cd /tmp/faest-ref
+          meson setup build -Dopenssl=disabled
+          meson compile -C build
+          
+          # Copy library to project
+          mkdir -p /project/lib/linux/aarch64
+          cp build/libfaest.so* /project/lib/linux/aarch64/
+          cd /project/lib/linux/aarch64
+          ln -sf libfaest.so.1.0.0 libfaest.so.1
+          ln -sf libfaest.so.1 libfaest.so
+          
+          # Add __init__.py files
+          echo "# Library package" > /project/lib/__init__.py
+          mkdir -p /project/lib/linux
+          echo "# Platform package" > /project/lib/linux/__init__.py
+          echo "# Arch package" > /project/lib/linux/aarch64/__init__.py
+          
+          ls -la /project/lib/linux/aarch64/
         CIBW_BEFORE_BUILD: "pip install cffi pycparser"
         CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel} --plat manylinux_2_17_aarch64"
 
