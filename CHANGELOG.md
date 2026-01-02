@@ -5,6 +5,14 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.26] - 2026-01-02
+
+### Fixed
+- **aarch64 auditwheel compatibility** - Use `manylinux_2_28` instead of `manylinux_2_17`
+  - The manylinux toolchain produces glibc symbols too new for manylinux_2_17
+  - manylinux_2_28 (glibc 2.28) is compatible with most Linux distros from 2018+
+  - Still provides broad compatibility while fixing the auditwheel repair error
+
 ## [v1.0.25] - 2026-01-02
 
 ### Fixed
