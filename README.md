@@ -26,8 +26,10 @@ pip install pyfaest
 
 **Pre-built wheels available for:**
 - Linux x86_64 (manylinux)
+- Linux aarch64 / ARM64 (Raspberry Pi, AWS Graviton)
 - macOS arm64 (Apple Silicon)
-- Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
+- macOS x86_64 (Intel Macs)
+- Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13
 
 No compilation required! For other platforms, see installation guide.
 
@@ -199,10 +201,10 @@ Typical performance on modern hardware (single core):
 | Platform        | Status      | Notes                              |
 |----------------|-------------|------------------------------------|
 | Linux x86_64   | ✅ Supported | Pre-built wheels                   |
+| Linux aarch64  | ✅ Supported | Pre-built wheels (ARM64, Raspberry Pi, AWS Graviton) |
 | macOS arm64    | ✅ Supported | Pre-built wheels (Apple Silicon)   |
+| macOS x86_64   | ✅ Supported | Pre-built wheels (Intel Macs)      |
 | Windows (WSL)  | ✅ Supported | Use Linux wheels in WSL            |
-| macOS x86_64   | ⚠️ Source   | Build from source (Intel Macs)     |
-| Linux aarch64  | ⚠️ Source   | Build from source (ARM64 Linux)    |
 | Windows native | ❌ Not supported | Use WSL instead                    |
 
 ## Development

@@ -10,7 +10,7 @@ PyFAEST can be installed in two ways:
 
 ### Prerequisites
 
-- **Linux x86_64** or **macOS arm64** (or WSL on Windows)
+- **Linux** (x86_64 or aarch64/ARM64) or **macOS** (arm64 or x86_64) or **WSL on Windows**
 - Python 3.8 or higher
 - pip
 
@@ -22,8 +22,10 @@ pip install pyfaest
 
 That's it! The PyPI package includes pre-built wheels for:
 - **Linux x86_64** (manylinux_2_17)
+- **Linux aarch64 / ARM64** (Raspberry Pi, AWS Graviton, etc.)
 - **macOS arm64** (Apple Silicon)
-- **Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14**
+- **macOS x86_64** (Intel Macs)
+- **Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13**
 
 No compiler or build tools needed! For other platforms, PyPI will fall back to the source distribution with bundled libraries.
 
@@ -378,4 +380,91 @@ Your Python Script
 
 - Check examples: `examples/`
 - Read tests: `tests/test_pyfaest.py`
+
+---
+
+## Windows Native Support (Future / Experimental)
+
+PyFAEST does not currently provide pre-built Windows native wheels. Windows users should use **WSL** (Windows Subsystem for Linux) which provides full Linux compatibility.
+
+### Why No Windows Native Support?
+
+1. **FAEST reference implementation** uses POSIX-specific features
+2. **Build complexity** - Requires MSVC and Windows-specific patches
+3. **Limited demand** - WSL provides excellent compatibility
+
+### For Advanced Users: Building on Windows (Experimental)
+
+If you need Windows native support, here's the general approach:
+
+#### Option 1: Cross-compile from Linux (Recommended)
+
+```bash
+# Install MinGW-w64 cross-compiler on Linux
+sudo apt-get install mingw-w64
+
+# Create a meson cross-file
+cat > win64-cross.txt << 'EOF'
+[binaries]
+c = 'x86_64-w64-mingw32-gcc'
+cpp = 'x86_64-w64-mingw32-g++'
+ar = 'x86_64-w64-mingw32-ar'
+strip = 'x86_64-w64-mingw32-strip'
+windres = 'x86_64-w64-mingw32-windres'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+EOF
+
+# Build FAEST for Windows
+cd faest-ref
+meson setup build-win64 --cross-file=win64-cross.txt
+meson compile -C build-win64
+```
+
+#### Option 2: Native MSVC Build (Requires Windows + Visual Studio)
+
+```powershell
+# Install prerequisites
+# - Visual Studio 2019 or 2022 with C++ workload
+# - Python 3.8+
+# - Meson (pip install meson)
+# - Ninja (pip install ninja)
+
+# Set up environment (from VS Developer Command Prompt)
+cd faest-ref
+meson setup build
+meson compile -C build
+
+# Copy faest.dll to pyfaest\lib\windows\x64\
+```
+
+#### Known Issues with Windows Native
+
+- Some FAEST code may use POSIX features requiring patches
+- Windows DLL loading differs from Linux/macOS shared libraries  
+- ABI compatibility between compilers can cause issues
+- Testing coverage is limited
+
+### Recommended: Use WSL
+
+For Windows users, WSL provides the best experience:
+
+```powershell
+# Install WSL (PowerShell as Administrator)
+wsl --install -d Ubuntu
+
+# In WSL Ubuntu terminal
+pip install pyfaest
+python -c "from faest import Keypair; print('Success!')"
+```
+
+WSL2 provides:
+- Full Linux compatibility
+- Pre-built wheel support
+- No build tools required
+- Better performance than cross-compilation
 - See API docs: `faest/core.py` has detailed docstrings

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux:
+  build-linux-x86_64:
     name: Build for Linux (x86_64)
     runs-on: ubuntu-latest
     
@@ -32,10 +32,14 @@ jobs:
         mkdir -p lib/linux/x86_64
         mkdir -p include
         cp faest-ref/build/libfaest.so* lib/linux/x86_64/ || true
+        cd lib/linux/x86_64
+        ln -sf libfaest.so.1.0.0 libfaest.so.1
+        ln -sf libfaest.so.1 libfaest.so
+        cd -
         cp faest-ref/*.h include/ || true
         ls -lh lib/linux/x86_64/
     
-    - name: Upload Linux artifacts
+    - name: Upload Linux x86_64 artifacts
       uses: actions/upload-artifact@v4
       with:
         name: faest-linux-x86_64
@@ -43,8 +47,64 @@ jobs:
           lib/linux/x86_64/
           include/
 
-  build-macos:
-    name: Build for macOS (x86_64 & arm64)
+  build-linux-aarch64:
+    name: Build for Linux (aarch64) via cross-compilation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout pyfaest
+      uses: actions/checkout@v4
+    
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+    
+    - name: Clone faest-ref
+      run: |
+        git clone --depth=1 https://github.com/faest-sign/faest-ref.git
+    
+    - name: Build FAEST library (cross-compile)
+      run: |
+        cd faest-ref
+        cat > aarch64-cross.txt << 'EOF'
+        [binaries]
+        c = 'aarch64-linux-gnu-gcc'
+        cpp = 'aarch64-linux-gnu-g++'
+        ar = 'aarch64-linux-gnu-ar'
+        strip = 'aarch64-linux-gnu-strip'
+        
+        [host_machine]
+        system = 'linux'
+        cpu_family = 'aarch64'
+        cpu = 'aarch64'
+        endian = 'little'
+        EOF
+        meson setup build --cross-file=aarch64-cross.txt
+        meson compile -C build
+    
+    - name: Prepare bundled libraries
+      run: |
+        mkdir -p lib/linux/aarch64
+        mkdir -p include
+        cp faest-ref/build/libfaest.so* lib/linux/aarch64/ || true
+        cd lib/linux/aarch64
+        ln -sf libfaest.so.1.0.0 libfaest.so.1
+        ln -sf libfaest.so.1 libfaest.so
+        cd -
+        cp faest-ref/*.h include/ || true
+        ls -lh lib/linux/aarch64/
+    
+    - name: Upload Linux aarch64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: faest-linux-aarch64
+        path: |
+          lib/linux/aarch64/
+          include/
+
+  build-macos-arm64:
+    name: Build for macOS (arm64)
     runs-on: macos-latest
     
     steps:
@@ -59,7 +119,7 @@ jobs:
       run: |
         git clone --depth=1 https://github.com/faest-sign/faest-ref.git
     
-    - name: Build FAEST library (Universal Binary)
+    - name: Build FAEST library
       run: |
         cd faest-ref
         meson setup build
@@ -68,24 +128,83 @@ jobs:
     - name: Prepare bundled libraries
       run: |
         mkdir -p lib/macos/arm64
-        mkdir -p lib/macos/x86_64
         mkdir -p include
-        cp faest-ref/build/libfaest.dylib lib/macos/arm64/ || true
-        cp faest-ref/build/libfaest.dylib lib/macos/x86_64/ || true
+        cp faest-ref/build/libfaest*.dylib lib/macos/arm64/ || true
+        cd lib/macos/arm64
+        ln -sf libfaest.1.dylib libfaest.dylib
+        cd -
         cp faest-ref/*.h include/ || true
-        ls -lh lib/macos/*/
+        ls -lh lib/macos/arm64/
     
-    - name: Upload macOS artifacts
+    - name: Upload macOS arm64 artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: faest-macos
+        name: faest-macos-arm64
         path: |
-          lib/macos/
+          lib/macos/arm64/
+          include/
+
+  build-macos-x86_64:
+    name: Build for macOS (x86_64) via cross-compilation
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout pyfaest
+      uses: actions/checkout@v4
+    
+    - name: Install build dependencies
+      run: |
+        brew install meson ninja
+    
+    - name: Clone faest-ref
+      run: |
+        git clone --depth=1 https://github.com/faest-sign/faest-ref.git
+    
+    - name: Build FAEST library (cross-compile for x86_64)
+      run: |
+        cd faest-ref
+        cat > x86_64-cross.txt << 'EOF'
+        [binaries]
+        c = 'clang'
+        cpp = 'clang++'
+        
+        [built-in options]
+        c_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        cpp_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        c_link_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        cpp_link_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        
+        [host_machine]
+        system = 'darwin'
+        cpu_family = 'x86_64'
+        cpu = 'x86_64'
+        endian = 'little'
+        EOF
+        meson setup build --cross-file=x86_64-cross.txt
+        meson compile -C build
+    
+    - name: Prepare bundled libraries
+      run: |
+        mkdir -p lib/macos/x86_64
+        mkdir -p include
+        cp faest-ref/build/libfaest*.dylib lib/macos/x86_64/ || true
+        cd lib/macos/x86_64
+        ln -sf libfaest.1.dylib libfaest.dylib
+        cd -
+        cp faest-ref/*.h include/ || true
+        ls -lh lib/macos/x86_64/
+    
+    - name: Upload macOS x86_64 artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: faest-macos-x86_64
+        path: |
+          lib/macos/x86_64/
           include/
 
   combine-artifacts:
     name: Combine all platform libraries
-    needs: [build-linux, build-macos]
+    needs: [build-linux-x86_64, build-linux-aarch64, build-macos-arm64, build-macos-x86_64]
     runs-on: ubuntu-latest
     
     steps:
@@ -99,14 +218,24 @@ jobs:
         mkdir -p combined/lib
         mkdir -p combined/include
         
-        # Copy Linux libraries
+        # Copy Linux x86_64 libraries
         if [ -d "artifacts/faest-linux-x86_64/lib" ]; then
           cp -r artifacts/faest-linux-x86_64/lib/* combined/lib/
         fi
         
-        # Copy macOS libraries
-        if [ -d "artifacts/faest-macos/lib" ]; then
-          cp -r artifacts/faest-macos/lib/* combined/lib/
+        # Copy Linux aarch64 libraries
+        if [ -d "artifacts/faest-linux-aarch64/lib" ]; then
+          cp -r artifacts/faest-linux-aarch64/lib/* combined/lib/
+        fi
+        
+        # Copy macOS arm64 libraries
+        if [ -d "artifacts/faest-macos-arm64/lib" ]; then
+          cp -r artifacts/faest-macos-arm64/lib/* combined/lib/
+        fi
+        
+        # Copy macOS x86_64 libraries
+        if [ -d "artifacts/faest-macos-x86_64/lib" ]; then
+          cp -r artifacts/faest-macos-x86_64/lib/* combined/lib/
         fi
         
         # Copy headers (from any artifact, they should be the same)
@@ -115,6 +244,7 @@ jobs:
         fi
         
         # Show what we have
+        echo "Combined library structure:"
         find combined -type f
     
     - name: Upload combined artifacts

@@ -190,14 +190,23 @@ import platform
 system = platform.system().lower()
 machine = platform.machine().lower()
 
+# Normalize machine architecture names
+if machine in ['x86_64', 'amd64']:
+    machine = 'x86_64'
+elif machine in ['aarch64', 'arm64']:
+    # Linux uses 'aarch64', macOS uses 'arm64'
+    machine = 'aarch64' if system == 'linux' else 'arm64'
+
 if system == 'linux':
     platform_dir = f'linux/{machine}' if machine in ['x86_64', 'aarch64'] else 'linux/x86_64'
 elif system == 'darwin':
-    platform_dir = f'macos/{machine}' if machine == 'arm64' else 'macos/x86_64'
+    platform_dir = f'macos/{machine}' if machine in ['arm64', 'x86_64'] else 'macos/x86_64'
 elif system == 'windows':
     platform_dir = 'windows/x64'
 else:
     platform_dir = None
+
+print(f"Detected platform: {system} / {machine} -> {platform_dir}")
 
 # Check for bundled libraries first (PyPI install)
 bundled_lib_dir = os.path.join(script_dir, 'lib', platform_dir) if platform_dir else None

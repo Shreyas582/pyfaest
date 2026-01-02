@@ -18,15 +18,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Linux x86_64 (native build)
           - os: ubuntu-latest
             platform: linux
             arch: x86_64
+            cross_compile: false
+          # Linux aarch64 (cross-compile)
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            cross_compile: true
+          # macOS arm64 (Apple Silicon - native)
           - os: macos-latest
             platform: macos
             arch: arm64
+            cross_compile: false
+          # macOS x86_64 (Intel - cross-compile from arm64)
+          - os: macos-latest
+            platform: macos
+            arch: x86_64
+            cross_compile: true
     
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     steps:
     - name: Checkout code
@@ -37,11 +51,17 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install build dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Install build dependencies (Linux x86_64)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
       run: |
         sudo apt-get update
         sudo apt-get install -y meson ninja-build
+
+    - name: Install build dependencies (Linux aarch64 cross-compile)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y meson ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
     
     - name: Install build dependencies (macOS)
       if: matrix.os == 'macos-latest'
@@ -51,12 +71,69 @@ jobs:
     - name: Clone faest-ref
       run: |
         git clone --depth=1 https://github.com/faest-sign/faest-ref.git
-    
-    - name: Build FAEST library
+
+    - name: Build FAEST library (Linux x86_64)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
       timeout-minutes: 20
       run: |
         cd faest-ref
         meson setup build
+        meson compile -C build
+
+    - name: Build FAEST library (Linux aarch64 cross-compile)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
+      timeout-minutes: 30
+      run: |
+        cd faest-ref
+        # Create cross-compilation file for aarch64
+        cat > aarch64-cross.txt << 'EOF'
+        [binaries]
+        c = 'aarch64-linux-gnu-gcc'
+        cpp = 'aarch64-linux-gnu-g++'
+        ar = 'aarch64-linux-gnu-ar'
+        strip = 'aarch64-linux-gnu-strip'
+        
+        [host_machine]
+        system = 'linux'
+        cpu_family = 'aarch64'
+        cpu = 'aarch64'
+        endian = 'little'
+        EOF
+        meson setup build --cross-file=aarch64-cross.txt
+        meson compile -C build
+
+    - name: Build FAEST library (macOS arm64)
+      if: matrix.os == 'macos-latest' && matrix.arch == 'arm64'
+      timeout-minutes: 20
+      run: |
+        cd faest-ref
+        meson setup build
+        meson compile -C build
+
+    - name: Build FAEST library (macOS x86_64 cross-compile)
+      if: matrix.os == 'macos-latest' && matrix.arch == 'x86_64'
+      timeout-minutes: 30
+      run: |
+        cd faest-ref
+        # Create cross-compilation file for x86_64
+        cat > x86_64-cross.txt << 'EOF'
+        [binaries]
+        c = 'clang'
+        cpp = 'clang++'
+        
+        [built-in options]
+        c_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        cpp_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        c_link_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        cpp_link_args = ['-arch', 'x86_64', '-mmacosx-version-min=10.14']
+        
+        [host_machine]
+        system = 'darwin'
+        cpu_family = 'x86_64'
+        cpu = 'x86_64'
+        endian = 'little'
+        EOF
+        meson setup build --cross-file=x86_64-cross.txt
         meson compile -C build
     
     - name: Prepare libraries (Linux)
@@ -94,12 +171,13 @@ jobs:
           include/
 
   build-wheels:
-    name: Build wheels for ${{ matrix.platform }} Python ${{ matrix.python-version }}
+    name: Build wheels for ${{ matrix.platform }}-${{ matrix.arch }} Python ${{ matrix.python-version }}
     needs: build-libraries
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Linux x86_64
           - os: ubuntu-latest
             platform: linux
             arch: x86_64
@@ -128,6 +206,36 @@ jobs:
             platform: linux
             arch: x86_64
             python-version: '3.14-dev'
+          # Linux aarch64 (ARM64)
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.8'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.9'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.10'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.11'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.12'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.13'
+          - os: ubuntu-latest
+            platform: linux
+            arch: aarch64
+            python-version: '3.14-dev'
+          # macOS arm64 (Apple Silicon)
           - os: macos-latest
             platform: macos
             arch: arm64
@@ -156,6 +264,31 @@ jobs:
             platform: macos
             arch: arm64
             python-version: '3.14-dev'
+          # macOS x86_64 (Intel Macs)
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.8'
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.9'
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.10'
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.11'
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.12'
+          - os: macos-13
+            platform: macos
+            arch: x86_64
+            python-version: '3.13'
     
     runs-on: ${{ matrix.os }}
     
@@ -169,9 +302,13 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Set macOS deployment target
-      if: matrix.os == 'macos-latest'
+      if: matrix.platform == 'macos'
       run: |
-        echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
+        if [ "${{ matrix.arch }}" = "arm64" ]; then
+          echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
+        else
+          echo "MACOSX_DEPLOYMENT_TARGET=10.14" >> $GITHUB_ENV
+        fi
 
     - name: Install build tools
       run: |
@@ -196,11 +333,17 @@ jobs:
       run: |
         pip wheel . --no-deps -w dist/
 
-    - name: Repair wheel (Linux only)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Repair wheel (Linux x86_64)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
       run: |
         auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_x86_64 || echo "auditwheel failed, keeping original"
         rm -f dist/*-linux_x86_64.whl
+
+    - name: Repair wheel (Linux aarch64)
+      if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
+      run: |
+        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_aarch64 || echo "auditwheel failed, keeping original"
+        rm -f dist/*-linux_aarch64.whl
 
     - name: Upload wheel
       uses: actions/upload-artifact@v4
@@ -245,14 +388,24 @@ jobs:
       run: |
         mkdir -p lib include
         
-        # Copy Linux libraries
+        # Copy Linux x86_64 libraries
         if [ -d "artifacts/faest-linux-x86_64/lib" ]; then
           cp -rv artifacts/faest-linux-x86_64/lib/* lib/
         fi
         
-        # Copy macOS libraries
+        # Copy Linux aarch64 libraries
+        if [ -d "artifacts/faest-linux-aarch64/lib" ]; then
+          cp -rv artifacts/faest-linux-aarch64/lib/* lib/
+        fi
+        
+        # Copy macOS arm64 libraries
         if [ -d "artifacts/faest-macos-arm64/lib" ]; then
           cp -rv artifacts/faest-macos-arm64/lib/* lib/
+        fi
+        
+        # Copy macOS x86_64 libraries
+        if [ -d "artifacts/faest-macos-x86_64/lib" ]; then
+          cp -rv artifacts/faest-macos-x86_64/lib/* lib/
         fi
         
         # Copy headers from any artifact (should be same)

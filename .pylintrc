@@ -1,0 +1,52 @@
+[MASTER]
+# Use multiple processes for faster checking
+jobs=4
+
+# Pickle collected data for later comparisons
+persistent=yes
+
+[MESSAGES CONTROL]
+# Disable specific warnings that are too strict for this project
+disable=
+    C0111,  # missing-docstring
+    C0103,  # invalid-name (for short variable names)
+    R0913,  # too-many-arguments
+    R0914,  # too-many-locals
+    W0212,  # protected-access (for _faest_cffi)
+    C0301,  # line-too-long (handled by black)
+    R0801,  # duplicate-code
+
+[BASIC]
+# Good variable names
+good-names=i,j,k,ex,Run,_,pk,sk,sig,msg
+
+[FORMAT]
+# Maximum line length
+max-line-length=100
+
+# Maximum module lines
+max-module-lines=1000
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=7
+
+# Maximum number of locals for function / method body
+max-locals=20
+
+# Maximum number of return / yield for function / method body
+max-returns=6
+
+# Maximum number of branch for function / method body
+max-branches=15
+
+# Maximum number of statements in function / method body
+max-statements=60
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=6
+
+[TYPECHECK]
+# List of members which are set dynamically
+generated-members=ffi,lib

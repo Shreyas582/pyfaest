@@ -5,7 +5,24 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v1.0.16]
+
+### Added
+- **Linux aarch64 (ARM64) support** - Pre-built wheels for Raspberry Pi, AWS Graviton, and other ARM64 Linux systems
+- **macOS x86_64 (Intel Mac) support** - Pre-built wheels for Intel-based Macs
+- Cross-compilation in CI for all new platforms
+
+### Changed
+- Expanded platform support from 2 to 4 architectures
+- Improved `faest_build.py` platform detection with architecture normalization
+- Updated CI workflow to build wheels for all supported platforms
+
+### Platform Support Summary
+- ✅ Linux x86_64 - Pre-built wheels
+- ✅ Linux aarch64 - Pre-built wheels (NEW)
+- ✅ macOS arm64 - Pre-built wheels
+- ✅ macOS x86_64 - Pre-built wheels (NEW)
+- ✅ Windows via WSL - Use Linux wheels
 
 ## [1.0.15] - 2025-12-03
 
