@@ -208,35 +208,6 @@ jobs:
             platform: linux
             arch: x86_64
             python-version: '3.14-dev'
-          # Linux aarch64 (ARM64)
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.8'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.9'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.10'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.11'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.12'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.13'
-          - os: ubuntu-latest
-            platform: linux
-            arch: aarch64
-            python-version: '3.14-dev'
           # macOS arm64 (Apple Silicon)
           - os: macos-latest
             platform: macos
@@ -407,9 +378,63 @@ jobs:
         name: wheel-${{ matrix.platform }}-${{ matrix.arch }}-py${{ matrix.python-version }}
         path: dist/*.whl
 
+  build-wheels-linux-aarch64:
+    name: Build Linux aarch64 wheels (QEMU)
+    needs: build-libraries
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
+
+    - name: Download aarch64 library artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: faest-linux-aarch64
+
+    - name: Prepare library structure
+      run: |
+        # Show what was downloaded
+        echo "Downloaded artifacts:"
+        find . -name "libfaest*" -o -name "*.h" | head -30
+        ls -laR lib/ || echo "No lib/ directory"
+        
+        # Ensure library symlinks exist
+        cd lib/linux/aarch64
+        [ -f libfaest.so.1.0.0 ] && ln -sf libfaest.so.1.0.0 libfaest.so.1
+        [ -f libfaest.so.1 ] && ln -sf libfaest.so.1 libfaest.so
+        ls -la
+        
+        # Add __init__.py files
+        cd ../../..
+        echo "# Library package" > lib/__init__.py
+        find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
+        echo "# Include package" > include/__init__.py
+
+    - name: Build aarch64 wheels with cibuildwheel
+      uses: pypa/cibuildwheel@v2.21.3
+      env:
+        CIBW_ARCHS_LINUX: aarch64
+        CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
+        CIBW_SKIP: "*-musllinux_*"
+        CIBW_PLATFORM: linux
+        CIBW_BEFORE_BUILD: "pip install cffi pycparser"
+        CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel} --plat manylinux_2_17_aarch64"
+
+    - name: Upload aarch64 wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-linux-aarch64
+        path: wheelhouse/*.whl
+
   publish:
     name: Publish to PyPI
-    needs: [build-libraries, build-wheels]
+    needs: [build-libraries, build-wheels, build-wheels-linux-aarch64]
     runs-on: ubuntu-latest
     environment: release
 
