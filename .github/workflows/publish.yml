@@ -408,12 +408,45 @@ jobs:
         meson setup build -Dopenssl=disabled
         meson compile -C build
         
+        # Show what meson built
+        echo "=== Meson build output ==="
+        ls -la build/libfaest*
+        
         # Copy library to project
         mkdir -p /project/lib/linux/aarch64
         cp -v build/libfaest.so* /project/lib/linux/aarch64/
         cd /project/lib/linux/aarch64
-        ln -sf libfaest.so.1.0.0 libfaest.so.1 || true
-        ln -sf libfaest.so.1 libfaest.so || true
+        
+        # Create symlinks robustly - find the actual versioned library
+        VERSIONED_LIB=$(ls libfaest.so.* 2>/dev/null | grep -E 'libfaest\.so\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+        if [ -z "$VERSIONED_LIB" ]; then
+          # Try pattern like libfaest.so.1
+          VERSIONED_LIB=$(ls libfaest.so.* 2>/dev/null | grep -E 'libfaest\.so\.[0-9]+$' | head -1)
+        fi
+        
+        echo "Found versioned library: $VERSIONED_LIB"
+        
+        # Create symlink chain
+        if [ -n "$VERSIONED_LIB" ]; then
+          # If we have libfaest.so.1.0.0, create libfaest.so.1 -> libfaest.so.1.0.0
+          if [[ "$VERSIONED_LIB" =~ libfaest\.so\.([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            MAJOR_VER="${BASH_REMATCH[1]}"
+            ln -sf "$VERSIONED_LIB" "libfaest.so.$MAJOR_VER"
+            ln -sf "libfaest.so.$MAJOR_VER" libfaest.so
+          else
+            # Just libfaest.so.1 format
+            ln -sf "$VERSIONED_LIB" libfaest.so
+          fi
+        fi
+        
+        # Ensure libfaest.so exists (fallback)
+        if [ ! -e libfaest.so ]; then
+          # Find any .so file and link it
+          ANY_SO=$(ls libfaest.so* 2>/dev/null | head -1)
+          if [ -n "$ANY_SO" ]; then
+            ln -sf "$ANY_SO" libfaest.so
+          fi
+        fi
         
         # Add __init__.py files
         echo "# Library package" > /project/lib/__init__.py

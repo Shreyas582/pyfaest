@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [v1.0.23] - 2026-01-02
 
-### Fixed
-- **aarch64 build script approach** - Use external build script instead of inline YAML
+### Fixed- **aarch64 symlink creation** - Fixed robust symlink creation for libfaest.so
+  - Detect actual library version pattern from meson output (e.g., `libfaest.so.1.0.0` or `libfaest.so.1`)
+  - Create proper symlink chain regardless of versioning scheme
+  - Add fallback to ensure `libfaest.so` always exists for linker
+  - Add debug output to show meson build results
+
+## [v1.0.23] - 2026-01-02
+
+### Fixed- **aarch64 build script approach** - Use external build script instead of inline YAML
   - Create `build_faest.sh` script to build library inside manylinux container
   - Remove dependency on pre-built artifacts for aarch64 (build everything from source)
   - Install meson/ninja via pip for better compatibility with manylinux
