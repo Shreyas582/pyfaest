@@ -5,6 +5,15 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.23] - 2026-01-02
+
+### Fixed
+- **aarch64 build script approach** - Use external build script instead of inline YAML
+  - Create `build_faest.sh` script to build library inside manylinux container
+  - Remove dependency on pre-built artifacts for aarch64 (build everything from source)
+  - Install meson/ninja via pip for better compatibility with manylinux
+  - Copy headers from faest-ref directly inside the container
+
 ## [v1.0.22] - 2026-01-02
 
 ### Fixed
