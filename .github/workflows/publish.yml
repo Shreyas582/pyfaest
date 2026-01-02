@@ -61,15 +61,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
       run: |
         sudo apt-get update
-        # Add arm64 architecture for cross-compilation libraries
-        sudo dpkg --add-architecture arm64
-        sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
-        echo "deb [arch=arm64] http://ports.ubuntu.com/ noble main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64] http://ports.ubuntu.com/ noble-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-        sudo apt-get update
         sudo apt-get install -y meson ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-        # Install OpenSSL dev headers for arm64 cross-compilation
-        sudo apt-get install -y libssl-dev:arm64 || true
     
     - name: Install build dependencies (macOS)
       if: matrix.os == 'macos-latest'
