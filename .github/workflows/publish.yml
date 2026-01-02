@@ -266,28 +266,28 @@ jobs:
             platform: macos
             arch: arm64
             python-version: '3.14-dev'
-          # macOS x86_64 (Intel Macs)
-          - os: macos-13
+          # macOS x86_64 (Intel Macs) - using macos-15 with cross-compiled library
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.8'
-          - os: macos-13
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.9'
-          - os: macos-13
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.10'
-          - os: macos-13
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.11'
-          - os: macos-13
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.12'
-          - os: macos-13
+          - os: macos-15
             platform: macos
             arch: x86_64
             python-version: '3.13'
@@ -334,6 +334,20 @@ jobs:
     - name: Build wheel
       run: |
         pip wheel . --no-deps -w dist/
+
+    - name: Rename macOS x86_64 wheel to correct platform tag
+      if: matrix.platform == 'macos' && matrix.arch == 'x86_64'
+      run: |
+        # The wheel built on arm64 will have arm64 tag, rename it for x86_64
+        cd dist
+        for f in *macosx*arm64*.whl; do
+          if [ -f "$f" ]; then
+            newname=$(echo "$f" | sed 's/arm64/x86_64/g' | sed 's/macosx_11_0/macosx_10_14/g')
+            mv "$f" "$newname"
+            echo "Renamed $f to $newname"
+          fi
+        done
+        ls -la
 
     - name: Repair wheel (Linux x86_64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
