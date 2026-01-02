@@ -329,6 +329,33 @@ jobs:
       with:
         name: faest-${{ matrix.platform }}-${{ matrix.arch }}
 
+    - name: Debug - Show downloaded files
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Directory structure:"
+        find . -name "libfaest*" -o -name "*.h" | head -30
+        echo "---"
+        ls -laR lib/ || echo "No lib/ directory"
+        ls -laR include/ || echo "No include/ directory"
+
+    - name: Verify library exists
+      run: |
+        LIB_DIR="lib/${{ matrix.platform }}/${{ matrix.arch }}"
+        echo "Checking for library in: $LIB_DIR"
+        ls -la "$LIB_DIR/" || { echo "ERROR: Library directory not found!"; exit 1; }
+        # Ensure symlinks exist
+        cd "$LIB_DIR"
+        if [ "${{ matrix.platform }}" = "linux" ]; then
+          ls -la libfaest.so* || { echo "No libfaest.so files found"; exit 1; }
+          # Recreate symlinks if needed
+          [ -f libfaest.so.1.0.0 ] && ln -sf libfaest.so.1.0.0 libfaest.so.1
+          [ -f libfaest.so.1 ] && ln -sf libfaest.so.1 libfaest.so
+        elif [ "${{ matrix.platform }}" = "macos" ]; then
+          ls -la libfaest*.dylib || { echo "No libfaest.dylib files found"; exit 1; }
+          [ -f libfaest.1.dylib ] && ln -sf libfaest.1.dylib libfaest.dylib
+        fi
+        ls -la
+
     - name: Add __init__.py files to make packages
       run: |
         echo "# Library package" > lib/__init__.py
