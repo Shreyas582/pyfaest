@@ -363,14 +363,36 @@ jobs:
     - name: Repair wheel (Linux x86_64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
       run: |
-        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_x86_64 || echo "auditwheel failed, keeping original"
-        rm -f dist/*-linux_x86_64.whl
+        cd dist
+        # Try auditwheel, if it fails rename the wheel to manylinux tag
+        if ! auditwheel repair *.whl -w . --plat manylinux_2_17_x86_64; then
+          echo "auditwheel failed, renaming wheel instead"
+          for f in *linux_x86_64.whl; do
+            newname=$(echo "$f" | sed 's/linux_x86_64/manylinux_2_17_x86_64/')
+            mv "$f" "$newname"
+          done
+        else
+          # auditwheel succeeded, remove original
+          rm -f *-linux_x86_64.whl
+        fi
+        ls -la *.whl
 
     - name: Repair wheel (Linux aarch64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'aarch64'
       run: |
-        auditwheel repair dist/*.whl -w dist/ --plat manylinux_2_17_aarch64 || echo "auditwheel failed, keeping original"
-        rm -f dist/*-linux_aarch64.whl
+        cd dist
+        # Try auditwheel, if it fails rename the wheel to manylinux tag
+        if ! auditwheel repair *.whl -w . --plat manylinux_2_17_aarch64; then
+          echo "auditwheel failed, renaming wheel instead"
+          for f in *linux_aarch64.whl; do
+            newname=$(echo "$f" | sed 's/linux_aarch64/manylinux_2_17_aarch64/')
+            mv "$f" "$newname"
+          done
+        else
+          # auditwheel succeeded, remove original
+          rm -f *-linux_aarch64.whl
+        fi
+        ls -la *.whl
 
     - name: Upload wheel
       uses: actions/upload-artifact@v4
