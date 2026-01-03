@@ -182,8 +182,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Write-Host "=== Meson build output ==="
-        Get-ChildItem -Path faest-ref/build -Recurse -Include "*.dll","*.lib" | ForEach-Object { $_.FullName }
+        Write-Host "=== Meson build output (all files) ==="
+        Get-ChildItem -Path faest-ref/build -Recurse | ForEach-Object { $_.FullName }
         
         New-Item -ItemType Directory -Force -Path lib/windows/x64
         
@@ -198,10 +198,35 @@ jobs:
           exit 1
         }
         
-        # Also copy the import library if it exists
+        # Find and copy the import library (.lib file, but not .dll.a)
         $libFiles = Get-ChildItem -Path faest-ref/build -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
         if ($libFiles) {
+          Write-Host "Found import library: $($libFiles[0].FullName)"
           Copy-Item -Path $libFiles[0].FullName -Destination lib/windows/x64/faest.lib
+        } else {
+          # Check for .dll.a (MinGW style import library)
+          $dllAFiles = Get-ChildItem -Path faest-ref/build -Recurse -Filter "*.dll.a" -ErrorAction SilentlyContinue
+          if ($dllAFiles) {
+            Write-Host "Found MinGW import library: $($dllAFiles[0].FullName)"
+            Copy-Item -Path $dllAFiles[0].FullName -Destination lib/windows/x64/faest.lib
+          } else {
+            Write-Host "WARNING: No import library found. Will try to generate one..."
+            # Generate import library from DLL using dumpbin and lib
+            cd lib/windows/x64
+            & dumpbin /exports faest.dll > exports.txt
+            # Create a .def file
+            $exports = Get-Content exports.txt | Select-String -Pattern "^\s+\d+\s+[0-9A-Fa-f]+\s+[0-9A-Fa-f]+\s+(\w+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+            "LIBRARY faest" | Out-File -FilePath faest.def -Encoding ascii
+            "EXPORTS" | Out-File -FilePath faest.def -Append -Encoding ascii
+            $exports | ForEach-Object { "  $_" } | Out-File -FilePath faest.def -Append -Encoding ascii
+            # Generate import library
+            & lib /def:faest.def /out:faest.lib /machine:x64
+            if (-not (Test-Path faest.lib)) {
+              Write-Error "Failed to generate import library!"
+              exit 1
+            }
+            cd ../../..
+          }
         }
         
         Write-Host "=== Library files ==="
