@@ -154,7 +154,8 @@ jobs:
       shell: cmd
       run: |
         cd faest-ref
-        meson setup build -Dopenssl=disabled
+        REM Build with static linking of MSVC runtime to avoid dependency issues
+        meson setup build -Dopenssl=disabled -Db_vscrt=static_from_buildtype
         meson compile -C build
     
     - name: Prepare libraries (Linux)
