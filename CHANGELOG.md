@@ -5,6 +5,15 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.32] - 2026-01-02
+
+### Fixed
+- **Windows DLL copy fix** - Properly find and copy the DLL from meson build
+  - Search recursively for any `.dll` file in the build directory
+  - Copy first found DLL as `faest.dll` (meson may name it differently)
+  - Also copy import library (`.lib`) if present
+  - Add debug output to show what meson produced
+
 ## [v1.0.31] - 2026-01-02
 
 ### Added

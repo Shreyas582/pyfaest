@@ -182,10 +182,29 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
+        Write-Host "=== Meson build output ==="
+        Get-ChildItem -Path faest-ref/build -Recurse -Include "*.dll","*.lib" | ForEach-Object { $_.FullName }
+        
         New-Item -ItemType Directory -Force -Path lib/windows/x64
-        Copy-Item -Path faest-ref/build/faest.dll -Destination lib/windows/x64/ -ErrorAction SilentlyContinue
-        Copy-Item -Path faest-ref/build/libfaest.dll -Destination lib/windows/x64/faest.dll -ErrorAction SilentlyContinue
-        Copy-Item -Path faest-ref/build/faest-1.dll -Destination lib/windows/x64/ -ErrorAction SilentlyContinue
+        
+        # Find any DLL in the build directory and copy it as faest.dll
+        $dllFiles = Get-ChildItem -Path faest-ref/build -Recurse -Filter "*.dll"
+        if ($dllFiles) {
+          $firstDll = $dllFiles[0]
+          Write-Host "Found DLL: $($firstDll.FullName)"
+          Copy-Item -Path $firstDll.FullName -Destination lib/windows/x64/faest.dll
+        } else {
+          Write-Error "No DLL files found in faest-ref/build!"
+          exit 1
+        }
+        
+        # Also copy the import library if it exists
+        $libFiles = Get-ChildItem -Path faest-ref/build -Recurse -Filter "*.lib" -ErrorAction SilentlyContinue
+        if ($libFiles) {
+          Copy-Item -Path $libFiles[0].FullName -Destination lib/windows/x64/faest.lib
+        }
+        
+        Write-Host "=== Library files ==="
         Get-ChildItem -Path lib/windows/x64/
 
     - name: Prepare headers
