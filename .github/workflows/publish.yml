@@ -514,6 +514,50 @@ jobs:
       run: |
         pip wheel . --no-deps -w dist/
 
+    - name: Repair wheel (Windows) - Add DLL to wheel
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        # Windows wheels need the DLL in the same directory as the .pyd file
+        # Unpack wheel, add DLL, repack
+        cd dist
+        $wheel = Get-ChildItem -Filter "*.whl" | Select-Object -First 1
+        Write-Host "Repairing wheel: $($wheel.Name)"
+        
+        # Create temp directory and unpack
+        $tempDir = "wheel_temp"
+        New-Item -ItemType Directory -Force -Path $tempDir
+        Expand-Archive -Path $wheel.FullName -DestinationPath $tempDir -Force
+        
+        # Copy DLL to the root of the wheel (next to _faest_cffi.pyd)
+        $dllSource = "../lib/windows/x64/faest.dll"
+        if (Test-Path $dllSource) {
+          Copy-Item -Path $dllSource -Destination $tempDir/faest.dll
+          Write-Host "Added faest.dll to wheel root"
+        } else {
+          Write-Error "DLL not found at $dllSource"
+          exit 1
+        }
+        
+        # Update RECORD file
+        $recordFile = Get-ChildItem -Path $tempDir -Filter "RECORD" -Recurse | Select-Object -First 1
+        if ($recordFile) {
+          Add-Content -Path $recordFile.FullName -Value "faest.dll,,"
+        }
+        
+        # Repack wheel
+        Remove-Item $wheel.FullName
+        Compress-Archive -Path "$tempDir/*" -DestinationPath "$($wheel.BaseName).zip"
+        Rename-Item "$($wheel.BaseName).zip" $wheel.Name
+        
+        # Cleanup
+        Remove-Item -Recurse -Force $tempDir
+        
+        Write-Host "Final wheel contents:"
+        Expand-Archive -Path $wheel.Name -DestinationPath "verify_temp" -Force
+        Get-ChildItem -Path "verify_temp" -Recurse | ForEach-Object { $_.FullName }
+        Remove-Item -Recurse -Force "verify_temp"
+
     - name: Repair wheel (Linux x86_64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
       run: |

@@ -52,7 +52,7 @@ all_packages = base_packages + lib_packages
 
 setup(
     name='pyfaest',
-    version='1.0.37',
+    version='1.0.38',
     author='PyFAEST Contributors',
     author_email='',
     maintainer='Shreyas Sankpal',
