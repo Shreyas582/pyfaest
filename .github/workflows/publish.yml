@@ -516,47 +516,64 @@ jobs:
 
     - name: Repair wheel (Windows) - Add DLL to wheel
       if: matrix.os == 'windows-latest'
-      shell: pwsh
+      shell: python
       run: |
-        # Windows wheels need the DLL in the same directory as the .pyd file
-        # Unpack wheel, add DLL, repack
-        cd dist
-        $wheel = Get-ChildItem -Filter "*.whl" | Select-Object -First 1
-        Write-Host "Repairing wheel: $($wheel.Name)"
+        import zipfile
+        import os
+        import shutil
+        from pathlib import Path
         
-        # Create temp directory and unpack
-        $tempDir = "wheel_temp"
-        New-Item -ItemType Directory -Force -Path $tempDir
-        Expand-Archive -Path $wheel.FullName -DestinationPath $tempDir -Force
+        dist_dir = Path('dist')
+        wheel_files = list(dist_dir.glob('*.whl'))
+        if not wheel_files:
+            raise Exception("No wheel found in dist/")
         
-        # Copy DLL to the root of the wheel (next to _faest_cffi.pyd)
-        $dllSource = "../lib/windows/x64/faest.dll"
-        if (Test-Path $dllSource) {
-          Copy-Item -Path $dllSource -Destination $tempDir/faest.dll
-          Write-Host "Added faest.dll to wheel root"
-        } else {
-          Write-Error "DLL not found at $dllSource"
-          exit 1
-        }
+        wheel_path = wheel_files[0]
+        print(f"Repairing wheel: {wheel_path}")
+        
+        dll_source = Path('lib/windows/x64/faest.dll')
+        if not dll_source.exists():
+            raise Exception(f"DLL not found at {dll_source}")
+        
+        # Create temp directory
+        temp_dir = dist_dir / 'wheel_temp'
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        temp_dir.mkdir()
+        
+        # Extract wheel
+        with zipfile.ZipFile(wheel_path, 'r') as zf:
+            zf.extractall(temp_dir)
+        
+        # Copy DLL to wheel root
+        shutil.copy(dll_source, temp_dir / 'faest.dll')
+        print("Added faest.dll to wheel root")
         
         # Update RECORD file
-        $recordFile = Get-ChildItem -Path $tempDir -Filter "RECORD" -Recurse | Select-Object -First 1
-        if ($recordFile) {
-          Add-Content -Path $recordFile.FullName -Value "faest.dll,,"
-        }
+        for record_file in temp_dir.rglob('RECORD'):
+            with open(record_file, 'a') as f:
+                f.write('faest.dll,,\n')
+            print(f"Updated {record_file}")
         
-        # Repack wheel
-        Remove-Item $wheel.FullName
-        Compress-Archive -Path "$tempDir/*" -DestinationPath "$($wheel.BaseName).zip"
-        Rename-Item "$($wheel.BaseName).zip" $wheel.Name
+        # Remove old wheel
+        wheel_path.unlink()
+        
+        # Create new wheel with proper zip structure
+        with zipfile.ZipFile(wheel_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for file_path in temp_dir.rglob('*'):
+                if file_path.is_file():
+                    arcname = file_path.relative_to(temp_dir)
+                    zf.write(file_path, arcname)
+                    print(f"  Added: {arcname}")
         
         # Cleanup
-        Remove-Item -Recurse -Force $tempDir
+        shutil.rmtree(temp_dir)
         
-        Write-Host "Final wheel contents:"
-        Expand-Archive -Path $wheel.Name -DestinationPath "verify_temp" -Force
-        Get-ChildItem -Path "verify_temp" -Recurse | ForEach-Object { $_.FullName }
-        Remove-Item -Recurse -Force "verify_temp"
+        print(f"\nFinal wheel: {wheel_path}")
+        with zipfile.ZipFile(wheel_path, 'r') as zf:
+            print("Contents:")
+            for name in zf.namelist():
+                print(f"  {name}")
 
     - name: Repair wheel (Linux x86_64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
