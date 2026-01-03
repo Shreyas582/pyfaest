@@ -10,28 +10,59 @@ import weakref
 import os
 import sys
 
-# On Windows, we need to add the DLL directory to the search path before importing
+# On Windows, we need to load the DLL before importing the CFFI module
+_dll_handle = None
 if sys.platform == 'win32':
+    import ctypes
+    
     # Find the lib/windows/x64 directory relative to this file's site-packages location
     _this_dir = os.path.dirname(os.path.abspath(__file__))
     _site_packages = os.path.dirname(_this_dir)  # Go up from faest/ to site-packages/
     _dll_dir = os.path.join(_site_packages, 'lib', 'windows', 'x64')
+    _dll_path = os.path.join(_dll_dir, 'faest.dll')
     
-    if os.path.exists(_dll_dir):
-        # Python 3.8+ requires explicit DLL directory registration
+    # Try to load the DLL explicitly
+    if os.path.exists(_dll_path):
+        try:
+            # Load the DLL explicitly so it's available when CFFI loads
+            _dll_handle = ctypes.CDLL(_dll_path)
+        except OSError as e:
+            pass  # Will fail later with better error message
+        
+        # Also register the directory for dependent DLLs (Python 3.8+)
         if hasattr(os, 'add_dll_directory'):
             os.add_dll_directory(_dll_dir)
-        # Also add to PATH as a fallback for older Python or other loaders
         os.environ['PATH'] = _dll_dir + os.pathsep + os.environ.get('PATH', '')
 
 try:
     from _faest_cffi import ffi, lib
-except ImportError:
-    raise ImportError(
-        "FAEST C library bindings not found. "
-        "Please run 'python faest_build.py' to generate the bindings, "
-        "or install the package with 'pip install .'"
-    )
+except ImportError as e:
+    # Provide helpful error message on Windows
+    if sys.platform == 'win32':
+        _this_dir = os.path.dirname(os.path.abspath(__file__))
+        _site_packages = os.path.dirname(_this_dir)
+        _dll_dir = os.path.join(_site_packages, 'lib', 'windows', 'x64')
+        _dll_path = os.path.join(_dll_dir, 'faest.dll')
+        
+        debug_info = f"\nDebug info:\n"
+        debug_info += f"  DLL directory: {_dll_dir}\n"
+        debug_info += f"  DLL path: {_dll_path}\n"
+        debug_info += f"  DLL exists: {os.path.exists(_dll_path)}\n"
+        debug_info += f"  Dir exists: {os.path.exists(_dll_dir)}\n"
+        if os.path.exists(_dll_dir):
+            debug_info += f"  Dir contents: {os.listdir(_dll_dir)}\n"
+        
+        raise ImportError(
+            f"FAEST C library bindings failed to load: {e}\n"
+            f"{debug_info}"
+            "Please reinstall the package with 'pip install --force-reinstall pyfaest'"
+        )
+    else:
+        raise ImportError(
+            "FAEST C library bindings not found. "
+            "Please run 'python faest_build.py' to generate the bindings, "
+            "or install the package with 'pip install .'"
+        )
 
 
 class FaestError(Exception):
