@@ -5,6 +5,16 @@ All notable changes to PyFAEST will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.31] - 2026-01-02
+
+### Added
+- **Windows native support** - Build and publish Windows x64 wheels
+  - Added Windows to CI/CD build matrix (`windows-latest` runner)
+  - Build FAEST library as DLL using MSVC via meson
+  - Support Python 3.9-3.12 on Windows x64
+  - Updated `faest_build.py` to detect Windows DLLs (`faest.dll`)
+  - Added `lib/windows/x64/` directory structure
+
 ## [v1.0.30] - 2026-01-02
 
 ### Fixed

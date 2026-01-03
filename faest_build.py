@@ -231,7 +231,10 @@ has_bundled_lib = False
 if bundled_lib_dir and os.path.exists(bundled_include_dir):
     # Look for library files in the bundled directory
     if os.path.exists(bundled_lib_dir):
-        lib_files = [f for f in os.listdir(bundled_lib_dir) if f.startswith('libfaest') and ('.so' in f or '.dylib' in f or '.dll' in f or f.endswith('.a'))]
+        # Check for both libfaest* (Unix) and faest.dll (Windows)
+        lib_files = [f for f in os.listdir(bundled_lib_dir) 
+                     if (f.startswith('libfaest') and ('.so' in f or '.dylib' in f or f.endswith('.a')))
+                     or (f.startswith('faest') and f.endswith('.dll'))]
         has_bundled_lib = len(lib_files) > 0
         if has_bundled_lib:
             print(f"Found bundled library files: {lib_files}")

@@ -38,6 +38,11 @@ jobs:
             platform: macos
             arch: x86_64
             cross_compile: true
+          # Windows x64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            cross_compile: false
     
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
@@ -67,6 +72,11 @@ jobs:
       if: matrix.os == 'macos-latest'
       run: |
         brew install meson ninja
+
+    - name: Install build dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pip install meson ninja
     
     - name: Clone faest-ref
       run: |
@@ -137,6 +147,15 @@ jobs:
         EOF
         meson setup build --cross-file=x86_64-cross.txt
         meson compile -C build
+
+    - name: Build FAEST library (Windows x64)
+      if: matrix.os == 'windows-latest'
+      timeout-minutes: 30
+      shell: cmd
+      run: |
+        cd faest-ref
+        meson setup build -Dopenssl=disabled
+        meson compile -C build
     
     - name: Prepare libraries (Linux)
       if: matrix.os == 'ubuntu-latest'
@@ -159,7 +178,18 @@ jobs:
         ln -sf libfaest.1.dylib libfaest.dylib
         ls -lh
     
+    - name: Prepare libraries (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path lib/windows/x64
+        Copy-Item -Path faest-ref/build/faest.dll -Destination lib/windows/x64/ -ErrorAction SilentlyContinue
+        Copy-Item -Path faest-ref/build/libfaest.dll -Destination lib/windows/x64/faest.dll -ErrorAction SilentlyContinue
+        Copy-Item -Path faest-ref/build/faest-1.dll -Destination lib/windows/x64/ -ErrorAction SilentlyContinue
+        Get-ChildItem -Path lib/windows/x64/
+
     - name: Prepare headers
+      shell: bash
       run: |
         mkdir -p include
         cp faest-ref/*.h include/ || true
@@ -255,6 +285,23 @@ jobs:
             platform: macos
             arch: x86_64
             python-version: '3.12'
+          # Windows x64
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.9'
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.10'
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.11'
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.12'
     
     runs-on: ${{ matrix.os }}
     
@@ -279,7 +326,8 @@ jobs:
           echo "_PYTHON_HOST_PLATFORM=macosx-10.14-x86_64" >> $GITHUB_ENV
         fi
 
-    - name: Install build tools
+    - name: Install build tools (Unix)
+      if: matrix.os != 'windows-latest'
       run: |
         python -m pip install --upgrade pip
         pip install wheel setuptools cffi pycparser
@@ -287,21 +335,40 @@ jobs:
           pip install auditwheel patchelf
         fi
 
+    - name: Install build tools (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        python -m pip install --upgrade pip
+        pip install wheel setuptools cffi pycparser
+
     - name: Download library artifacts
       uses: actions/download-artifact@v4
       with:
         name: faest-${{ matrix.platform }}-${{ matrix.arch }}
 
-    - name: Debug - Show downloaded files
+    - name: Debug - Show downloaded files (Unix)
+      if: matrix.os != 'windows-latest'
       run: |
         echo "Current directory: $(pwd)"
         echo "Directory structure:"
-        find . -name "libfaest*" -o -name "*.h" | head -30
+        find . -name "libfaest*" -o -name "*.h" -o -name "*.dll" | head -30
         echo "---"
         ls -laR lib/ || echo "No lib/ directory"
         ls -laR include/ || echo "No include/ directory"
 
-    - name: Verify library exists
+    - name: Debug - Show downloaded files (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Write-Host "Current directory: $(Get-Location)"
+        Write-Host "Directory structure:"
+        Get-ChildItem -Recurse -Include "*.dll","*.h" | Select-Object -First 30 | ForEach-Object { $_.FullName }
+        Write-Host "---"
+        Get-ChildItem -Recurse lib/ -ErrorAction SilentlyContinue
+        Get-ChildItem -Recurse include/ -ErrorAction SilentlyContinue
+
+    - name: Verify library exists (Unix)
+      if: matrix.os != 'windows-latest'
       run: |
         LIB_DIR="lib/${{ matrix.platform }}/${{ matrix.arch }}"
         echo "Checking for library in: $LIB_DIR"
@@ -319,13 +386,38 @@ jobs:
         fi
         ls -la
 
-    - name: Add __init__.py files to make packages
+    - name: Verify library exists (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $libDir = "lib/windows/x64"
+        Write-Host "Checking for library in: $libDir"
+        if (Test-Path $libDir) {
+          Get-ChildItem $libDir
+        } else {
+          Write-Error "Library directory not found!"
+          exit 1
+        }
+
+    - name: Add __init__.py files to make packages (Unix)
+      if: matrix.os != 'windows-latest'
       run: |
         echo "# Library package" > lib/__init__.py
         find lib -type d -exec sh -c 'echo "# Platform package" > "{}/__init__.py"' \;
         echo "# Include package" > include/__init__.py
 
-    - name: Build wheel
+    - name: Add __init__.py files to make packages (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        "# Library package" | Out-File -FilePath lib/__init__.py -Encoding utf8
+        Get-ChildItem -Path lib -Directory -Recurse | ForEach-Object {
+          "# Platform package" | Out-File -FilePath "$($_.FullName)/__init__.py" -Encoding utf8
+        }
+        "# Include package" | Out-File -FilePath include/__init__.py -Encoding utf8
+
+    - name: Build wheel (Unix)
+      if: matrix.os != 'windows-latest'
       run: |
         if [ "${{ matrix.platform }}" = "macos" ] && [ "${{ matrix.arch }}" = "x86_64" ]; then
           # Cross-compile for x86_64 from arm64
@@ -359,6 +451,11 @@ jobs:
         done
         echo "Final wheel files:"
         ls -la *.whl
+
+    - name: Build wheel (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pip wheel . --no-deps -w dist/
 
     - name: Repair wheel (Linux x86_64)
       if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x86_64'
