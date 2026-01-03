@@ -545,14 +545,15 @@ jobs:
         with zipfile.ZipFile(wheel_path, 'r') as zf:
             zf.extractall(temp_dir)
         
-        # Copy DLL to wheel root
-        shutil.copy(dll_source, temp_dir / 'faest.dll')
-        print("Added faest.dll to wheel root")
+        # Copy DLL to wheel root with the name that CFFI expects: libfaest-1.dll
+        # (meson on Windows creates libfaest-1.dll, and CFFI links against it)
+        shutil.copy(dll_source, temp_dir / 'libfaest-1.dll')
+        print("Added libfaest-1.dll to wheel root")
         
         # Update RECORD file
         for record_file in temp_dir.rglob('RECORD'):
             with open(record_file, 'a') as f:
-                f.write('faest.dll,,\n')
+                f.write('libfaest-1.dll,,\n')
             print(f"Updated {record_file}")
         
         # Remove old wheel
