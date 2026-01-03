@@ -333,6 +333,10 @@ jobs:
           - os: windows-latest
             platform: windows
             arch: x64
+            python-version: '3.8'
+          - os: windows-latest
+            platform: windows
+            arch: x64
             python-version: '3.9'
           - os: windows-latest
             platform: windows
@@ -346,6 +350,14 @@ jobs:
             platform: windows
             arch: x64
             python-version: '3.12'
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.13'
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            python-version: '3.14-dev'
     
     runs-on: ${{ matrix.os }}
     
