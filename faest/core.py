@@ -7,6 +7,22 @@ Handles memory management, error handling, and type conversions.
 
 from typing import Tuple, Optional
 import weakref
+import os
+import sys
+
+# On Windows, we need to add the DLL directory to the search path before importing
+if sys.platform == 'win32':
+    # Find the lib/windows/x64 directory relative to this file's site-packages location
+    _this_dir = os.path.dirname(os.path.abspath(__file__))
+    _site_packages = os.path.dirname(_this_dir)  # Go up from faest/ to site-packages/
+    _dll_dir = os.path.join(_site_packages, 'lib', 'windows', 'x64')
+    
+    if os.path.exists(_dll_dir):
+        # Python 3.8+ requires explicit DLL directory registration
+        if hasattr(os, 'add_dll_directory'):
+            os.add_dll_directory(_dll_dir)
+        # Also add to PATH as a fallback for older Python or other loaders
+        os.environ['PATH'] = _dll_dir + os.pathsep + os.environ.get('PATH', '')
 
 try:
     from _faest_cffi import ffi, lib
